@@ -2,5 +2,9 @@
     "huobi": {
 	"AccessKeyId" : "replaceme",
 	"SecretKeyId" : "replaceme"
+    },
+    "okex": {
+	"AccessKeyId" : "replaceme",
+	"SecretKeyId" : "replaceme"
     }
 }

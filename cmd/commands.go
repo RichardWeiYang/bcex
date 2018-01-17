@@ -23,13 +23,13 @@ func (c *CLI) RegisterCommands() {
 			exs := bcex.GetExs()
 			for n, ex := range exs {
 				balances, err := ex.GetBalance()
+				fmt.Println(n + ":")
 				if err == nil {
-					fmt.Println(n + ":")
-					for i, b := range balances {
-						fmt.Println(i, b.Currency, b.Balance)
+					for _, b := range balances {
+						fmt.Println(b.Currency, b.Balance)
 					}
 				} else {
-					fmt.Println(err)
+					fmt.Println("Error:" + err.Error())
 				}
 			}
 		}
