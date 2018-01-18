@@ -3,13 +3,14 @@ package lib
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"time"
 
-	"github.com/bitly/go-simplejson"
+	. "github.com/bitly/go-simplejson"
 )
 
 /*
@@ -64,8 +65,9 @@ func (bf *Bitfinex) getResp(req *http.Request) (int, []byte) {
 func (bf *Bitfinex) GetBalance() (balances []Balance, err error) {
 	req := bf.createReq("POST", "/v1/balances", true)
 	status, body := bf.getResp(req)
-	if status == http.StatusOK {
-		js, _ := simplejson.NewJson(body)
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
 		bs, _ := js.Array()
 		for _, b := range bs {
 			bt := b.(map[string]interface{})
@@ -73,17 +75,31 @@ func (bf *Bitfinex) GetBalance() (balances []Balance, err error) {
 				Balance{Currency: bt["currency"].(string),
 					Balance: bt["amount"].(string)})
 		}
-		return
+		return balances, nil
+	}
+
+	respErr := func(js *Json) (interface{}, error) {
+		reason, _ := js.Get("message").String()
+		err = errors.New(reason)
+		return nil, err
+	}
+
+	b, err := ProcessResp(status, js, respOk, respErr)
+	if err == nil {
+		balances = b.([]Balance)
 	}
 	return
 }
 func (bf *Bitfinex) Alive() bool {
 	req := bf.createReq("GET", "/v1/symbols", false)
 	status, _ := bf.getResp(req)
-	if status == http.StatusOK {
+	_, err := ProcessResp(status, nil, isAlive, notAlive)
+
+	if err != nil {
 		return true
+	} else {
+		return false
 	}
-	return false
 }
 
 func init() {

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/bitly/go-simplejson"
+	. "github.com/bitly/go-simplejson"
 )
 
 /*
@@ -47,9 +47,9 @@ func (bo *BigOne) getResp(req *http.Request) (int, []byte) {
 func (bo *BigOne) GetBalance() (balances []Balance, err error) {
 	req := bo.createReq("GET", "/accounts")
 	status, body := bo.getResp(req)
-	err = nil
-	js, _ := simplejson.NewJson(body)
-	if status == http.StatusOK {
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
 		bs, _ := js.Get("data").Array()
 		for _, b := range bs {
 			bt := b.(map[string]interface{})
@@ -59,20 +59,34 @@ func (bo *BigOne) GetBalance() (balances []Balance, err error) {
 						Balance: bt["active_balance"].(string)})
 			}
 		}
-	} else {
+		return balances, nil
+	}
+
+	respErr := func(js *Json) (interface{}, error) {
 		reason, _ := js.Get("error").Get("description").String()
 		err = errors.New(reason)
+		return nil, err
 	}
+
+	b, err := ProcessResp(status, js, respOk, respErr)
+	if err == nil {
+		balances = b.([]Balance)
+	}
+
 	return
 }
 
 func (bo *BigOne) Alive() bool {
 	req := bo.createReq("GET", "/accounts")
 	status, _ := bo.getResp(req)
-	if status == http.StatusOK {
+
+	_, err := ProcessResp(status, nil, isAlive, notAlive)
+
+	if err != nil {
 		return true
+	} else {
+		return false
 	}
-	return false
 }
 
 func init() {

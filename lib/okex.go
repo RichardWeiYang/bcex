@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bitly/go-simplejson"
+	. "github.com/bitly/go-simplejson"
 )
 
 /*
@@ -60,9 +60,9 @@ func (ok *Okex) getResp(req *http.Request) (int, []byte) {
 func (ok *Okex) GetBalance() (balances []Balance, err error) {
 	req := ok.createReq("POST", "/api/v1/userinfo.do", true)
 	status, body := ok.getResp(req)
-	err = nil
-	if status == http.StatusOK {
-		js, _ := simplejson.NewJson(body)
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
 		result, _ := js.Get("result").Bool()
 		if result {
 			free, _ := js.Get("info").Get("funds").Get("free").Map()
@@ -72,23 +72,37 @@ func (ok *Okex) GetBalance() (balances []Balance, err error) {
 						Balance{cur, b.(string)})
 				}
 			}
+			return balances, nil
 		} else {
 			reason, _ := js.Get("error_code").Int64()
 			err = errors.New(strconv.FormatInt(reason, 10))
+			return nil, err
 		}
-		return
+		return nil, errors.New("Unknow")
 	}
-	err = errors.New("Http Error")
+
+	respErr := func(js *Json) (interface{}, error) {
+		return nil, errors.New("Unknow")
+	}
+
+	b, err := ProcessResp(status, js, respOk, respErr)
+	if err == nil {
+		balances = b.([]Balance)
+	}
+
 	return
 }
 
 func (ok *Okex) Alive() bool {
 	req := ok.createReq("GET", "/api/v1/exchange_rate.do", false)
 	status, _ := ok.getResp(req)
-	if status == http.StatusOK {
+	_, err := ProcessResp(status, nil, isAlive, notAlive)
+
+	if err != nil {
 		return true
+	} else {
+		return false
 	}
-	return false
 }
 
 func init() {

@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bitly/go-simplejson"
+	. "github.com/bitly/go-simplejson"
 )
 
 /*
@@ -60,8 +60,9 @@ func (bn *Binance) GetBalance() (balances []Balance, err error) {
 	}
 	req := bn.createReq("GET", "/api/v3/account", params, true)
 	status, body := bn.getResp(req)
-	js, _ := simplejson.NewJson(body)
-	if status == http.StatusOK {
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
 		bs, _ := js.Get("balances").Array()
 		for _, b := range bs {
 			bt := b.(map[string]interface{})
@@ -71,19 +72,32 @@ func (bn *Binance) GetBalance() (balances []Balance, err error) {
 						Balance: bt["free"].(string)})
 			}
 		}
-	} else {
+		return balances, nil
+	}
+
+	respErr := func(js *Json) (interface{}, error) {
 		reason, _ := js.Get("msg").String()
 		err = errors.New(reason)
+		return nil, err
 	}
+
+	b, err := ProcessResp(status, js, respOk, respErr)
+	if err == nil {
+		balances = b.([]Balance)
+	}
+
 	return
 }
 func (bn *Binance) Alive() bool {
 	req := bn.createReq("GET", "/api/v1/time", nil, false)
 	status, _ := bn.getResp(req)
-	if status == http.StatusOK {
+	_, err := ProcessResp(status, nil, isAlive, notAlive)
+
+	if err != nil {
 		return true
+	} else {
+		return false
 	}
-	return false
 }
 func init() {
 	readConf()

@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bitly/go-simplejson"
+	. "github.com/bitly/go-simplejson"
 )
 
 /*
@@ -61,11 +61,12 @@ func (hb *Huobi) getResp(req *http.Request) (int, []byte) {
 	return resp.StatusCode, body
 }
 
-func (hb *Huobi) GetAccount() (string, error) {
+func (hb *Huobi) GetAccount() (account string, err error) {
 	req := hb.createReq("GET", "/v1/account/accounts")
 	status, body := hb.getResp(req)
-	if status == http.StatusOK {
-		js, _ := simplejson.NewJson(body)
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
 		status, _ := js.Get("status").String()
 		if status == "ok" {
 			acc, _ := js.Get("data").Array()
@@ -76,11 +77,20 @@ func (hb *Huobi) GetAccount() (string, error) {
 			}
 		} else {
 			reason, _ := js.Get("err-msg").String()
-			return reason, errors.New(reason)
+			return nil, errors.New(reason)
 		}
+		return nil, errors.New("Unknow")
 	}
 
-	return "error", errors.New("Http Failed")
+	respErr := func(js *Json) (interface{}, error) {
+		return nil, errors.New("Unknow")
+	}
+
+	acc, err := ProcessResp(status, js, respOk, respErr)
+	if err == nil {
+		account = acc.(string)
+	}
+	return
 }
 
 func (hb *Huobi) GetBalance() (balances []Balance, err error) {
@@ -95,9 +105,9 @@ func (hb *Huobi) GetBalance() (balances []Balance, err error) {
 
 	req := hb.createReq("GET", "/v1/account/accounts/"+hb.account_id+"/balance")
 	status, body := hb.getResp(req)
-	err = nil
-	if status == http.StatusOK {
-		js, _ := simplejson.NewJson(body)
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
 		status, _ := js.Get("status").String()
 		if status == "ok" {
 			list, _ := js.Get("data").Get("list").Array()
@@ -110,25 +120,37 @@ func (hb *Huobi) GetBalance() (balances []Balance, err error) {
 							Balance: b["balance"].(string)})
 				}
 			}
+			return balances, nil
 		} else {
 			reason, _ := js.Get("err-msg").String()
 			err = errors.New(reason)
+			return nil, err
 		}
+		return nil, errors.New("Unknow")
 	}
+
+	respErr := func(js *Json) (interface{}, error) {
+		return nil, errors.New("Unknow")
+	}
+
+	b, err := ProcessResp(status, js, respOk, respErr)
+	if err == nil {
+		balances = b.([]Balance)
+	}
+
 	return
 }
 
 func (hb *Huobi) Alive() bool {
 	req := hb.createReq("GET", "/v1/common/timestamp")
-	status, body := hb.getResp(req)
-	if status == http.StatusOK {
-		js, _ := simplejson.NewJson(body)
-		status, _ := js.Get("status").String()
-		if status == "ok" {
-			return true
-		}
+	status, _ := hb.getResp(req)
+	_, err := ProcessResp(status, nil, isAlive, notAlive)
+
+	if err != nil {
+		return true
+	} else {
+		return false
 	}
-	return false
 }
 
 func init() {
