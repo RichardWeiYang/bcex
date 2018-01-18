@@ -90,7 +90,5 @@ func init() {
 	readConf()
 	bitfinex.accesskeyid = keys[bitfinex.name].AccessKeyId
 	bitfinex.secretkeyid = keys[bitfinex.name].SecretKeyId
-	if bitfinex.Alive() {
-		RegisterEx(bitfinex.name, &bitfinex)
-	}
+	RegisterEx(bitfinex.name, bitfinex.accesskeyid, bitfinex.secretkeyid, &bitfinex)
 }

@@ -95,7 +95,5 @@ func init() {
 	readConf()
 	okex.accesskeyid = keys[okex.name].AccessKeyId
 	okex.secretkeyid = keys[okex.name].SecretKeyId
-	if okex.Alive() {
-		RegisterEx(okex.name, &okex)
-	}
+	RegisterEx(okex.name, okex.accesskeyid, okex.secretkeyid, &okex)
 }

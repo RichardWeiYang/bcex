@@ -79,7 +79,5 @@ func init() {
 	readConf()
 	bigone.accesskeyid = keys[bigone.name].AccessKeyId
 	bigone.secretkeyid = GetUUID()
-	if bigone.Alive() {
-		RegisterEx(bigone.name, &bigone)
-	}
+	RegisterEx(bigone.name, bigone.accesskeyid, bigone.secretkeyid, &bigone)
 }

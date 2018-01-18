@@ -53,8 +53,10 @@ type Exchange interface {
 
 var ex = map[string]Exchange{}
 
-func RegisterEx(name string, e Exchange) {
-	ex[name] = e
+func RegisterEx(name, ak, sk string, e Exchange) {
+	if (ak != "replaceme" || ak != "") && (sk != "replaceme" || sk != "") {
+		ex[name] = e
+	}
 }
 
 func GetExs() map[string]Exchange {

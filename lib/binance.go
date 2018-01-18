@@ -89,7 +89,5 @@ func init() {
 	readConf()
 	binance.accesskeyid = keys[binance.name].AccessKeyId
 	binance.secretkeyid = keys[binance.name].SecretKeyId
-	if binance.Alive() {
-		RegisterEx(binance.name, &binance)
-	}
+	RegisterEx(binance.name, binance.accesskeyid, binance.secretkeyid, &binance)
 }

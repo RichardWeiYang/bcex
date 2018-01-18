@@ -135,7 +135,5 @@ func init() {
 	readConf()
 	huobi.accesskeyid = keys[huobi.name].AccessKeyId
 	huobi.secretkeyid = keys[huobi.name].SecretKeyId
-	if huobi.Alive() {
-		RegisterEx(huobi.name, &huobi)
-	}
+	RegisterEx(huobi.name, huobi.accesskeyid, huobi.secretkeyid, &huobi)
 }
