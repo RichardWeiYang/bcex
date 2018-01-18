@@ -6,5 +6,9 @@
     "okex": {
 	"AccessKeyId" : "replaceme",
 	"SecretKeyId" : "replaceme"
+    },
+    "bitfinex": {
+	"AccessKeyId" : "replaceme",
+	"SecretKeyId" : "replaceme"
     }
 }

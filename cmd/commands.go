@@ -25,11 +25,15 @@ func (c *CLI) RegisterCommands() {
 				balances, err := ex.GetBalance()
 				fmt.Println(n + ":")
 				if err == nil {
+					if len(balances) == 0 {
+						fmt.Println("\tNone")
+						continue
+					}
 					for _, b := range balances {
-						fmt.Println(b.Currency, b.Balance)
+						fmt.Println("\t", b.Currency, b.Balance)
 					}
 				} else {
-					fmt.Println("Error:" + err.Error())
+					fmt.Println("\tError:" + err.Error())
 				}
 			}
 		}
