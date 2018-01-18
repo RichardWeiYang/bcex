@@ -10,5 +10,9 @@
     "bitfinex": {
 	"AccessKeyId" : "replaceme",
 	"SecretKeyId" : "replaceme"
+    },
+    "binance": {
+	"AccessKeyId" : "replaceme",
+	"SecretKeyId" : "replaceme"
     }
 }

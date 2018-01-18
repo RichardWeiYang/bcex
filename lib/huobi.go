@@ -1,9 +1,6 @@
 package lib
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
@@ -26,13 +23,6 @@ type Huobi struct {
 }
 
 var huobi = Huobi{name: "huobi", account_id: ""}
-
-func ComputeHmac256(message string, secret string) string {
-	key := []byte(secret)
-	h := hmac.New(sha256.New, key)
-	h.Write([]byte(message))
-	return base64.StdEncoding.EncodeToString(h.Sum(nil))
-}
 
 func (hb *Huobi) createReq(method, path string) *http.Request {
 	header := map[string][]string{
@@ -58,7 +48,7 @@ func (hb *Huobi) createReq(method, path string) *http.Request {
 	q := req.URL.Query()
 	q = params
 	data := "GET\napi.huobi.pro\n" + path + "\n" + q.Encode()
-	q.Add("Signature", ComputeHmac256(data, huobi.secretkeyid))
+	q.Add("Signature", ComputeHmac256Base64(data, huobi.secretkeyid))
 	req.URL.RawQuery = q.Encode()
 	return req
 }

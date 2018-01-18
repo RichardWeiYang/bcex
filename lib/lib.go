@@ -2,7 +2,11 @@ package lib
 
 import (
 	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/gob"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -73,4 +77,18 @@ func ListEx() (exchanges []string) {
 		exchanges = append(exchanges, key)
 	}
 	return
+}
+
+func ComputeHmac256(message string, secret string) string {
+	key := []byte(secret)
+	h := hmac.New(sha256.New, key)
+	h.Write([]byte(message))
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+func ComputeHmac256Base64(message string, secret string) string {
+	key := []byte(secret)
+	h := hmac.New(sha256.New, key)
+	h.Write([]byte(message))
+	return base64.StdEncoding.EncodeToString(h.Sum(nil))
 }
