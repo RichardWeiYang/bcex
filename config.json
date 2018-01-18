@@ -14,5 +14,9 @@
     "binance": {
 	"AccessKeyId" : "replaceme",
 	"SecretKeyId" : "replaceme"
+    },
+    "bigone": {
+	"AccessKeyId" : "replaceme",
+	"SecretKeyId" : "placeholder"
     }
 }
