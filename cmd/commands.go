@@ -20,13 +20,13 @@ func (c *CLI) RegisterCommands() {
 
 	c.Command("balance", "Get Account Balance", func(cmd *cli.Cmd) {
 		var (
-			exname = cmd.StringArg("EX", "", "The Exchange Name to display")
+			exname = cmd.StringArg("EX", "all", "The Exchange Name to display")
 		)
 
 		cmd.Action = func() {
 			exs := bcex.GetExs()
 			for n, ex := range exs {
-				if *exname != "" && n != *exname {
+				if *exname != "all" && n != *exname {
 					continue
 				}
 				balances, err := ex.GetBalance()
