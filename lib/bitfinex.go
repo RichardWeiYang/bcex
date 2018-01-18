@@ -1,10 +1,7 @@
 package lib
 
 import (
-	"crypto/hmac"
-	"crypto/sha512"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -47,13 +44,11 @@ func (bf *Bitfinex) createReq(method, path string, sign bool) *http.Request {
 		payload_json, _ := json.Marshal(payload)
 		payload_enc := base64.StdEncoding.EncodeToString(payload_json)
 
-		sig := hmac.New(sha512.New384, []byte(bitfinex.secretkeyid))
-		sig.Write([]byte(payload_enc))
 		req.Header.Add("Content-Type", "application/json")
 		req.Header.Add("Accept", "application/json")
 		req.Header.Add("X-BFX-APIKEY", bitfinex.accesskeyid)
 		req.Header.Add("X-BFX-PAYLOAD", payload_enc)
-		req.Header.Add("X-BFX-SIGNATURE", hex.EncodeToString(sig.Sum(nil)))
+		req.Header.Add("X-BFX-SIGNATURE", GetParamHmacSha384Sign(bitfinex.secretkeyid, payload_enc))
 	}
 	return req
 }

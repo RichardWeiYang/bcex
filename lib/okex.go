@@ -1,8 +1,6 @@
 package lib
 
 import (
-	"crypto/md5"
-	"encoding/hex"
 	"errors"
 	"io/ioutil"
 	"net/http"
@@ -23,12 +21,6 @@ type Okex struct {
 }
 
 var okex = Okex{name: "okex"}
-
-func GetMD5Hash(text string) string {
-	hasher := md5.New()
-	hasher.Write([]byte(text))
-	return hex.EncodeToString(hasher.Sum(nil))
-}
 
 func (ok *Okex) createReq(method, path string, sign bool) *http.Request {
 	header := map[string][]string{
