@@ -89,9 +89,11 @@ func (bo *BigOne) Alive() bool {
 	}
 }
 
+func (bo *BigOne) SetKey(access, secret string) {
+	bo.accesskeyid = access
+	bo.secretkeyid = GetUUID()
+}
+
 func init() {
-	readConf()
-	bigone.accesskeyid = keys[bigone.name].AccessKeyId
-	bigone.secretkeyid = GetUUID()
-	RegisterEx(bigone.name, bigone.accesskeyid, bigone.secretkeyid, &bigone)
+	RegisterEx(bigone.name, &bigone)
 }

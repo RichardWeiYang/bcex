@@ -153,9 +153,11 @@ func (hb *Huobi) Alive() bool {
 	}
 }
 
+func (hb *Huobi) SetKey(access, secret string) {
+	hb.accesskeyid = access
+	hb.secretkeyid = secret
+}
+
 func init() {
-	readConf()
-	huobi.accesskeyid = keys[huobi.name].AccessKeyId
-	huobi.secretkeyid = keys[huobi.name].SecretKeyId
-	RegisterEx(huobi.name, huobi.accesskeyid, huobi.secretkeyid, &huobi)
+	RegisterEx(huobi.name, &huobi)
 }

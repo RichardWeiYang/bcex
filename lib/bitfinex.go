@@ -102,9 +102,11 @@ func (bf *Bitfinex) Alive() bool {
 	}
 }
 
+func (bf *Bitfinex) SetKey(access, secret string) {
+	bf.accesskeyid = access
+	bf.secretkeyid = secret
+}
+
 func init() {
-	readConf()
-	bitfinex.accesskeyid = keys[bitfinex.name].AccessKeyId
-	bitfinex.secretkeyid = keys[bitfinex.name].SecretKeyId
-	RegisterEx(bitfinex.name, bitfinex.accesskeyid, bitfinex.secretkeyid, &bitfinex)
+	RegisterEx(bitfinex.name, &bitfinex)
 }

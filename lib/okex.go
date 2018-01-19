@@ -105,9 +105,11 @@ func (ok *Okex) Alive() bool {
 	}
 }
 
+func (ok *Okex) SetKey(access, secret string) {
+	ok.accesskeyid = access
+	ok.secretkeyid = secret
+}
+
 func init() {
-	readConf()
-	okex.accesskeyid = keys[okex.name].AccessKeyId
-	okex.secretkeyid = keys[okex.name].SecretKeyId
-	RegisterEx(okex.name, okex.accesskeyid, okex.secretkeyid, &okex)
+	RegisterEx(okex.name, &okex)
 }

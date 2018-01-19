@@ -88,6 +88,7 @@ func (bn *Binance) GetBalance() (balances []Balance, err error) {
 
 	return
 }
+
 func (bn *Binance) Alive() bool {
 	req := bn.createReq("GET", "/api/v1/time", nil, false)
 	status, _ := bn.getResp(req)
@@ -99,9 +100,12 @@ func (bn *Binance) Alive() bool {
 		return false
 	}
 }
+
+func (bn *Binance) SetKey(access, secret string) {
+	bn.accesskeyid = access
+	bn.secretkeyid = secret
+}
+
 func init() {
-	readConf()
-	binance.accesskeyid = keys[binance.name].AccessKeyId
-	binance.secretkeyid = keys[binance.name].SecretKeyId
-	RegisterEx(binance.name, binance.accesskeyid, binance.secretkeyid, &binance)
+	RegisterEx(binance.name, &binance)
 }

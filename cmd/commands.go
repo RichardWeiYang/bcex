@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	bcex "github.com/RichardWeiYang/bcex/lib"
+	. "github.com/RichardWeiYang/bcex/lib"
 	"github.com/jawher/mow.cli"
 )
 
@@ -11,10 +11,23 @@ func (c *CLI) RegisterCommands() {
 	// list
 	c.Command("list", "List Exchanges", func(cmd *cli.Cmd) {
 		cmd.Action = func() {
-			lists := bcex.ListEx()
+			lists := ListEx()
 			for _, ex := range lists {
 				fmt.Println(ex)
 			}
+		}
+	})
+
+	c.Command("setkey", "Set Exchange API-KEY", func(cmd *cli.Cmd) {
+		var (
+			exname    = cmd.StringArg("EX", "", "The Exchange to set")
+			accesskey = cmd.StringArg("AK", "", "The Exchange to set")
+			secretkey = cmd.StringArg("SK", "", "The Exchange to set")
+		)
+
+		cmd.Action = func() {
+			Init(*bcexKey)
+			WriteConf(*exname, *accesskey, *secretkey)
 		}
 	})
 
@@ -24,7 +37,8 @@ func (c *CLI) RegisterCommands() {
 		)
 
 		cmd.Action = func() {
-			exs := bcex.GetExs()
+			Init(*bcexKey)
+			exs := GetExs()
 			for n, ex := range exs {
 				if *exname != "all" && n != *exname {
 					continue
