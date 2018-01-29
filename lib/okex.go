@@ -2,7 +2,6 @@ package lib
 
 import (
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -22,8 +21,8 @@ type Okex struct {
 
 var okex = Okex{name: "okex"}
 
-func (ok *Okex) createReq(method, path string,
-	params map[string][]string, sign bool) *http.Request {
+func (ok *Okex) sendReq(method, path string,
+	params map[string][]string, sign bool) (int, []byte) {
 	header := map[string][]string{
 		"Content-Type": {`application/x-www-form-urlencoded`},
 	}
@@ -55,20 +54,11 @@ func (ok *Okex) createReq(method, path string,
 		q = params
 		req.URL.RawQuery = q.Encode()
 	}
-	return req
-}
-
-func (ok *Okex) getResp(req *http.Request) (int, []byte) {
-	client := &http.Client{}
-	resp, _ := client.Do(req)
-	body, _ := ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
-	return resp.StatusCode, body
+	return recvResp(req)
 }
 
 func (ok *Okex) GetBalance() (balances []Balance, err error) {
-	req := ok.createReq("POST", "/api/v1/userinfo.do", nil, true)
-	status, body := ok.getResp(req)
+	status, body := ok.sendReq("POST", "/api/v1/userinfo.do", nil, true)
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
@@ -103,8 +93,7 @@ func (ok *Okex) GetBalance() (balances []Balance, err error) {
 }
 
 func (ok *Okex) Alive() bool {
-	req := ok.createReq("GET", "/api/v1/exchange_rate.do", nil, false)
-	status, _ := ok.getResp(req)
+	status, _ := ok.sendReq("GET", "/api/v1/exchange_rate.do", nil, false)
 	_, err := ProcessResp(status, nil, isAlive, notAlive)
 
 	if err != nil {
@@ -124,8 +113,7 @@ func (ok *Okex) GetPrice(cp *CurrencyPair) (price Price, err error) {
 		"symbol": {cp.ToSymbol("_")},
 	}
 
-	req := ok.createReq("GET", "/api/v1/ticker.do", params, false)
-	status, body := ok.getResp(req)
+	status, body := ok.sendReq("GET", "/api/v1/ticker.do", params, false)
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {

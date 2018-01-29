@@ -1,7 +1,6 @@
 package lib
 
 import (
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -14,8 +13,8 @@ type Ex struct {
 
 var exe = Ex{name: "exe"}
 
-func (exe *Ex) createReq(method, path string,
-	params map[string][]string, sign bool) *http.Request {
+func (exe *Ex) sendReq(method, path string,
+	params map[string][]string, sign bool) (int, []byte) {
 	header := map[string][]string{
 		"Content-Type": {`application/x-www-form-urlencoded`},
 	}
@@ -45,15 +44,7 @@ func (exe *Ex) createReq(method, path string,
 		q = params
 		req.URL.RawQuery = q.Encode()
 	}
-	return req
-}
-
-func (exe *Ex) getResp(req *http.Request) (int, []byte) {
-	client := &http.Client{}
-	resp, _ := client.Do(req)
-	body, _ := ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
-	return resp.StatusCode, body
+	return recvResp(req)
 }
 
 func (exe *Ex) SetKey(access, secret string) {

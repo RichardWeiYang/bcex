@@ -2,7 +2,6 @@ package lib
 
 import (
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -23,8 +22,8 @@ type Binance struct {
 
 var binance = Binance{name: "binance"}
 
-func (bn *Binance) createReq(method, path string,
-	params map[string][]string, sign bool) *http.Request {
+func (bn *Binance) sendReq(method, path string,
+	params map[string][]string, sign bool) (int, []byte) {
 	header := map[string][]string{
 		"Content-Type": {`application/x-www-form-urlencoded`},
 	}
@@ -43,15 +42,7 @@ func (bn *Binance) createReq(method, path string,
 		req.Header.Add("X-MBX-APIKEY", binance.accesskeyid)
 	}
 	req.URL.RawQuery = q.Encode()
-	return req
-}
-
-func (bn *Binance) getResp(req *http.Request) (int, []byte) {
-	client := &http.Client{}
-	resp, _ := client.Do(req)
-	body, _ := ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
-	return resp.StatusCode, body
+	return recvResp(req)
 }
 
 func (bn *Binance) GetBalance() (balances []Balance, err error) {
@@ -59,8 +50,7 @@ func (bn *Binance) GetBalance() (balances []Balance, err error) {
 		"recvWindow": {`5000`},
 		"timestamp":  {strconv.FormatInt(time.Now().UnixNano(), 10)[0:13]},
 	}
-	req := bn.createReq("GET", "/api/v3/account", params, true)
-	status, body := bn.getResp(req)
+	status, body := bn.sendReq("GET", "/api/v3/account", params, true)
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
@@ -91,8 +81,7 @@ func (bn *Binance) GetBalance() (balances []Balance, err error) {
 }
 
 func (bn *Binance) Alive() bool {
-	req := bn.createReq("GET", "/api/v1/time", nil, false)
-	status, _ := bn.getResp(req)
+	status, _ := bn.sendReq("GET", "/api/v1/time", nil, false)
 	_, err := ProcessResp(status, nil, isAlive, notAlive)
 
 	if err != nil {
@@ -111,8 +100,7 @@ func (bn *Binance) GetPrice(cp *CurrencyPair) (price Price, err error) {
 	params := map[string][]string{
 		"symbol": {strings.ToUpper(cp.ToSymbol(""))},
 	}
-	req := bn.createReq("GET", "/api/v3/ticker/price", params, false)
-	status, body := bn.getResp(req)
+	status, body := bn.sendReq("GET", "/api/v3/ticker/price", params, false)
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {

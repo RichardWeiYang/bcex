@@ -2,7 +2,6 @@ package lib
 
 import (
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -22,7 +21,7 @@ type BigOne struct {
 
 var bigone = BigOne{name: "bigone"}
 
-func (bo *BigOne) createReq(method, path string) *http.Request {
+func (bo *BigOne) sendReq(method, path string) (int, []byte) {
 	header := map[string][]string{
 		"Authorization": {"Bearer " + bigone.accesskeyid},
 		"User-Agent":    {`standard browser user agent format`},
@@ -35,20 +34,11 @@ func (bo *BigOne) createReq(method, path string) *http.Request {
 	}
 
 	req.URL, _ = url.Parse("https://api.big.one" + path)
-	return req
-}
-
-func (bo *BigOne) getResp(req *http.Request) (int, []byte) {
-	client := &http.Client{}
-	resp, _ := client.Do(req)
-	body, _ := ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
-	return resp.StatusCode, body
+	return recvResp(req)
 }
 
 func (bo *BigOne) GetBalance() (balances []Balance, err error) {
-	req := bo.createReq("GET", "/accounts")
-	status, body := bo.getResp(req)
+	status, body := bo.sendReq("GET", "/accounts")
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
@@ -79,8 +69,7 @@ func (bo *BigOne) GetBalance() (balances []Balance, err error) {
 }
 
 func (bo *BigOne) Alive() bool {
-	req := bo.createReq("GET", "/accounts")
-	status, _ := bo.getResp(req)
+	status, _ := bo.sendReq("GET", "/accounts")
 
 	_, err := ProcessResp(status, nil, isAlive, notAlive)
 
@@ -97,8 +86,7 @@ func (bo *BigOne) SetKey(access, secret string) {
 }
 
 func (bo *BigOne) GetPrice(cp *CurrencyPair) (price Price, err error) {
-	req := bo.createReq("GET", "/markets/"+strings.ToUpper(cp.ToSymbol("-")))
-	status, body := bo.getResp(req)
+	status, body := bo.sendReq("GET", "/markets/"+strings.ToUpper(cp.ToSymbol("-")))
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {

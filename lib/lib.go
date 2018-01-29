@@ -125,6 +125,14 @@ var notAlive = func(js *Json) (interface{}, error) {
 	return nil, errors.New("Failed")
 }
 
+func recvResp(req *http.Request) (int, []byte) {
+	client := &http.Client{}
+	resp, _ := client.Do(req)
+	body, _ := ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
+	return resp.StatusCode, body
+}
+
 func ProcessResp(status int, js *Json, respOk, respErr RespHandle) (interface{}, error) {
 	if respOk == nil || respErr == nil {
 		return nil, errors.New("No proper handler")

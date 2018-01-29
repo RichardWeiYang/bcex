@@ -3,7 +3,6 @@ package lib
 import (
 	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -24,8 +23,8 @@ type Huobi struct {
 
 var huobi = Huobi{name: "huobi", account_id: ""}
 
-func (hb *Huobi) createReq(method, path string,
-	params map[string][]string, sign bool) *http.Request {
+func (hb *Huobi) sendReq(method, path string,
+	params map[string][]string, sign bool) (int, []byte) {
 	header := map[string][]string{
 		"Content-Type": {`application/json`},
 		"Accept":       {`application/json`},
@@ -63,20 +62,11 @@ func (hb *Huobi) createReq(method, path string,
 		req.URL.RawQuery = q.Encode()
 	}
 
-	return req
-}
-
-func (hb *Huobi) getResp(req *http.Request) (int, []byte) {
-	client := &http.Client{}
-	resp, _ := client.Do(req)
-	body, _ := ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
-	return resp.StatusCode, body
+	return recvResp(req)
 }
 
 func (hb *Huobi) GetAccount() (account string, err error) {
-	req := hb.createReq("GET", "/v1/account/accounts", nil, true)
-	status, body := hb.getResp(req)
+	status, body := hb.sendReq("GET", "/v1/account/accounts", nil, true)
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
@@ -116,8 +106,7 @@ func (hb *Huobi) GetBalance() (balances []Balance, err error) {
 		hb.account_id = acc
 	}
 
-	req := hb.createReq("GET", "/v1/account/accounts/"+hb.account_id+"/balance", nil, true)
-	status, body := hb.getResp(req)
+	status, body := hb.sendReq("GET", "/v1/account/accounts/"+hb.account_id+"/balance", nil, true)
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
@@ -155,8 +144,7 @@ func (hb *Huobi) GetBalance() (balances []Balance, err error) {
 }
 
 func (hb *Huobi) Alive() bool {
-	req := hb.createReq("GET", "/v1/common/timestamp", nil, false)
-	status, _ := hb.getResp(req)
+	status, _ := hb.sendReq("GET", "/v1/common/timestamp", nil, false)
 	_, err := ProcessResp(status, nil, isAlive, notAlive)
 
 	if err != nil {
@@ -176,8 +164,7 @@ func (hb *Huobi) GetPrice(cp *CurrencyPair) (price Price, err error) {
 		"symbol": {cp.ToSymbol("")},
 	}
 
-	req := hb.createReq("GET", "/market/trade", params, false)
-	status, body := hb.getResp(req)
+	status, body := hb.sendReq("GET", "/market/trade", params, false)
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {

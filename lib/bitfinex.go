@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -26,7 +25,7 @@ type Bitfinex struct {
 
 var bitfinex = Bitfinex{name: "bitfinex"}
 
-func (bf *Bitfinex) createReq(method, path string, sign bool) *http.Request {
+func (bf *Bitfinex) sendReq(method, path string, sign bool) (int, []byte) {
 	header := map[string][]string{
 		"Content-Type": {`application/json`},
 		"Accept":       {`application/json`},
@@ -53,20 +52,11 @@ func (bf *Bitfinex) createReq(method, path string, sign bool) *http.Request {
 		req.Header.Add("X-BFX-PAYLOAD", payload_enc)
 		req.Header.Add("X-BFX-SIGNATURE", GetParamHmacSha384Sign(bitfinex.secretkeyid, payload_enc))
 	}
-	return req
-}
-
-func (bf *Bitfinex) getResp(req *http.Request) (int, []byte) {
-	client := &http.Client{}
-	resp, _ := client.Do(req)
-	body, _ := ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
-	return resp.StatusCode, body
+	return recvResp(req)
 }
 
 func (bf *Bitfinex) GetBalance() (balances []Balance, err error) {
-	req := bf.createReq("POST", "/v1/balances", true)
-	status, body := bf.getResp(req)
+	status, body := bf.sendReq("POST", "/v1/balances", true)
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
@@ -93,8 +83,7 @@ func (bf *Bitfinex) GetBalance() (balances []Balance, err error) {
 	return
 }
 func (bf *Bitfinex) Alive() bool {
-	req := bf.createReq("GET", "/v1/symbols", false)
-	status, _ := bf.getResp(req)
+	status, _ := bf.sendReq("GET", "/v1/symbols", false)
 	_, err := ProcessResp(status, nil, isAlive, notAlive)
 
 	if err != nil {
@@ -110,8 +99,7 @@ func (bf *Bitfinex) SetKey(access, secret string) {
 }
 
 func (bf *Bitfinex) GetPrice(cp *CurrencyPair) (price Price, err error) {
-	req := bf.createReq("GET", "/v1/pubticker/"+strings.ToUpper(cp.ToSymbol("")), false)
-	status, body := bf.getResp(req)
+	status, body := bf.sendReq("GET", "/v1/pubticker/"+strings.ToUpper(cp.ToSymbol("")), false)
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
