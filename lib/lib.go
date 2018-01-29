@@ -95,7 +95,9 @@ type Exchange interface {
 var ex = map[string]Exchange{}
 
 func RegisterEx(name string, e Exchange) {
-	ex[name] = e
+	if e != nil {
+		ex[name] = e
+	}
 }
 
 func GetExs() map[string]Exchange {
