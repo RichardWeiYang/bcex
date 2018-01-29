@@ -16,12 +16,9 @@ import (
  */
 
 type Huobi struct {
-	name                     string
 	accesskeyid, secretkeyid string
 	account_id               string
 }
-
-var huobi = Huobi{name: "huobi", account_id: ""}
 
 func (hb *Huobi) sendReq(method, path string,
 	params map[string][]string, sign bool) (int, []byte) {
@@ -41,7 +38,7 @@ func (hb *Huobi) sendReq(method, path string,
 
 	if sign {
 		sign_params := map[string][]string{
-			"AccessKeyId":      {huobi.accesskeyid},
+			"AccessKeyId":      {hb.accesskeyid},
 			"SignatureVersion": {`2`},
 			"SignatureMethod":  {`HmacSHA256`},
 			"Timestamp":        {time.Now().UTC().Format("2006-01-02T15:04:05")},
@@ -54,7 +51,7 @@ func (hb *Huobi) sendReq(method, path string,
 		q := req.URL.Query()
 		q = sign_params
 		data := "GET\napi.huobi.pro\n" + path + "\n" + q.Encode()
-		q.Add("Signature", ComputeHmac256Base64(data, huobi.secretkeyid))
+		q.Add("Signature", ComputeHmac256Base64(data, hb.secretkeyid))
 		req.URL.RawQuery = q.Encode()
 	} else {
 		q := req.URL.Query()
@@ -196,6 +193,10 @@ func (hb *Huobi) GetPrice(cp *CurrencyPair) (price Price, err error) {
 	return
 }
 
+func NewHuobi() Exchange {
+	return new(Huobi)
+}
+
 func init() {
-	RegisterEx(huobi.name, &huobi)
+	RegisterEx("huobi", NewHuobi)
 }

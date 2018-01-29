@@ -15,17 +15,14 @@ import (
  */
 
 type BigOne struct {
-	name                     string
 	accesskeyid, secretkeyid string
 }
 
-var bigone = BigOne{name: "bigone"}
-
 func (bo *BigOne) sendReq(method, path string) (int, []byte) {
 	header := map[string][]string{
-		"Authorization": {"Bearer " + bigone.accesskeyid},
+		"Authorization": {"Bearer " + bo.accesskeyid},
 		"User-Agent":    {`standard browser user agent format`},
-		"Big-Device-Id": {bigone.secretkeyid},
+		"Big-Device-Id": {bo.secretkeyid},
 	}
 
 	req := &http.Request{
@@ -109,6 +106,10 @@ func (bo *BigOne) GetPrice(cp *CurrencyPair) (price Price, err error) {
 	return
 }
 
+func NewBigOne() Exchange {
+	return new(BigOne)
+}
+
 func init() {
-	RegisterEx(bigone.name, &bigone)
+	RegisterEx("bigone", NewBigOne)
 }

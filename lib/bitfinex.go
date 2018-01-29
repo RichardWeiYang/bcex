@@ -19,11 +19,8 @@ import (
  */
 
 type Bitfinex struct {
-	name                     string
 	accesskeyid, secretkeyid string
 }
-
-var bitfinex = Bitfinex{name: "bitfinex"}
 
 func (bf *Bitfinex) sendReq(method, path string, sign bool) (int, []byte) {
 	header := map[string][]string{
@@ -48,9 +45,9 @@ func (bf *Bitfinex) sendReq(method, path string, sign bool) (int, []byte) {
 
 		req.Header.Add("Content-Type", "application/json")
 		req.Header.Add("Accept", "application/json")
-		req.Header.Add("X-BFX-APIKEY", bitfinex.accesskeyid)
+		req.Header.Add("X-BFX-APIKEY", bf.accesskeyid)
 		req.Header.Add("X-BFX-PAYLOAD", payload_enc)
-		req.Header.Add("X-BFX-SIGNATURE", GetParamHmacSha384Sign(bitfinex.secretkeyid, payload_enc))
+		req.Header.Add("X-BFX-SIGNATURE", GetParamHmacSha384Sign(bf.secretkeyid, payload_enc))
 	}
 	return recvResp(req)
 }
@@ -121,6 +118,10 @@ func (bf *Bitfinex) GetPrice(cp *CurrencyPair) (price Price, err error) {
 	return
 }
 
+func NewBitfinex() Exchange {
+	return new(Bitfinex)
+}
+
 func init() {
-	RegisterEx(bitfinex.name, &bitfinex)
+	RegisterEx("bitfinex", NewBitfinex)
 }

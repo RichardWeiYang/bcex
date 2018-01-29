@@ -33,12 +33,6 @@ func Init(bcexkey string) {
 
 	ReadConf()
 
-	exchanges := ListEx()
-	for _, name := range exchanges {
-		e := GetEx(name)
-		ek := keys[name]
-		e.SetKey(ek.AccessKeyId, ek.SecretKeyId)
-	}
 }
 
 func WriteConf(name, accesskey, secretkey string) {

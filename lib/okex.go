@@ -15,11 +15,8 @@ import (
  */
 
 type Okex struct {
-	name                     string
 	accesskeyid, secretkeyid string
 }
-
-var okex = Okex{name: "okex"}
 
 func (ok *Okex) sendReq(method, path string,
 	params map[string][]string, sign bool) (int, []byte) {
@@ -35,7 +32,7 @@ func (ok *Okex) sendReq(method, path string,
 	req.URL, _ = url.Parse("https://www.okex.com" + path)
 	if sign {
 		sign_params := map[string][]string{
-			"api_key": {okex.accesskeyid},
+			"api_key": {ok.accesskeyid},
 		}
 
 		for k, v := range params {
@@ -46,7 +43,7 @@ func (ok *Okex) sendReq(method, path string,
 		q = sign_params
 		//q2 := q
 		//q2.Add("secret_key", okex.secretkeyid)
-		data := q.Encode() + "&secret_key=" + okex.secretkeyid
+		data := q.Encode() + "&secret_key=" + ok.secretkeyid
 		q.Add("sign", strings.ToUpper(GetMD5Hash(data)))
 		req.URL.RawQuery = q.Encode()
 	} else {
@@ -139,6 +136,10 @@ func (ok *Okex) GetPrice(cp *CurrencyPair) (price Price, err error) {
 	return
 }
 
+func NewOkex() Exchange {
+	return new(Okex)
+}
+
 func init() {
-	RegisterEx(okex.name, &okex)
+	RegisterEx("okex", NewOkex)
 }

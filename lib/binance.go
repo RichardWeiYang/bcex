@@ -16,11 +16,8 @@ import (
  */
 
 type Binance struct {
-	name                     string
 	accesskeyid, secretkeyid string
 }
-
-var binance = Binance{name: "binance"}
 
 func (bn *Binance) sendReq(method, path string,
 	params map[string][]string, sign bool) (int, []byte) {
@@ -38,8 +35,8 @@ func (bn *Binance) sendReq(method, path string,
 	q := req.URL.Query()
 	q = params
 	if sign {
-		q.Add("signature", ComputeHmac256(q.Encode(), binance.secretkeyid))
-		req.Header.Add("X-MBX-APIKEY", binance.accesskeyid)
+		q.Add("signature", ComputeHmac256(q.Encode(), bn.secretkeyid))
+		req.Header.Add("X-MBX-APIKEY", bn.accesskeyid)
 	}
 	req.URL.RawQuery = q.Encode()
 	return recvResp(req)
@@ -123,6 +120,10 @@ func (bn *Binance) GetPrice(cp *CurrencyPair) (price Price, err error) {
 	return
 }
 
+func NewBinance() Exchange {
+	return new(Binance)
+}
+
 func init() {
-	RegisterEx(binance.name, &binance)
+	RegisterEx("binance", NewBinance)
 }

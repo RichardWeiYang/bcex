@@ -7,11 +7,8 @@ import (
 )
 
 type Ex struct {
-	name                     string
 	accesskeyid, secretkeyid string
 }
-
-var exe = Ex{name: "exe"}
 
 func (exe *Ex) sendReq(method, path string,
 	params map[string][]string, sign bool) (int, []byte) {
@@ -64,6 +61,10 @@ func (exe *Ex) GetPrice(cp *CurrencyPair) (price Price, err error) {
 	return
 }
 
+func NewEx() Exchange {
+	return new(Ex)
+}
+
 func init() {
-	RegisterEx(exe.name, nil)
+	RegisterEx("exe", nil)
 }

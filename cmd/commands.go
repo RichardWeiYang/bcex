@@ -38,11 +38,14 @@ func (c *CLI) RegisterCommands() {
 
 		cmd.Action = func() {
 			Init(*bcexKey)
-			exs := GetExs()
-			for n, ex := range exs {
+			exchanges := ListEx()
+			for _, n := range exchanges {
 				if *exname != "all" && n != *exname {
 					continue
 				}
+				ex := GetEx(n)
+				ek := keys[n]
+				ex.SetKey(ek.AccessKeyId, ek.SecretKeyId)
 				balances, err := ex.GetBalance()
 				fmt.Println(n + ":")
 				if err == nil {
@@ -74,6 +77,8 @@ func (c *CLI) RegisterCommands() {
 				return
 			}
 
+			ek := keys[*exname]
+			ex.SetKey(ek.AccessKeyId, ek.SecretKeyId)
 			cp := NewCurrencyPair2(*currencypair)
 			price, err := ex.GetPrice(&cp)
 			if err != nil {

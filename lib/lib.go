@@ -26,27 +26,25 @@ type Exchange interface {
 	GetPrice(cp *CurrencyPair) (Price, error)
 }
 
-var ex = map[string]Exchange{}
+type NewExchange func() Exchange
 
-func RegisterEx(name string, e Exchange) {
-	if e != nil {
-		ex[name] = e
+var exs = map[string]NewExchange{}
+
+func RegisterEx(name string, ne NewExchange) {
+	if ne != nil {
+		exs[name] = ne
 	}
 }
 
-func GetExs() map[string]Exchange {
-	return ex
-}
-
 func GetEx(name string) Exchange {
-	if e, ok := ex[name]; ok {
-		return e
+	if ne, ok := exs[name]; ok {
+		return ne()
 	}
 	return nil
 }
 
 func ListEx() (exchanges []string) {
-	for key, _ := range ex {
+	for key, _ := range exs {
 		exchanges = append(exchanges, key)
 	}
 	return
