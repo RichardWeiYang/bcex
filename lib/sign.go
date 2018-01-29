@@ -13,7 +13,7 @@ import (
 	"io"
 )
 
-func decrypt(cipherstring string, keystring string) string {
+func Decrypt(cipherstring string, keystring string) string {
 	// Byte array of the string
 	ciphertext := []byte(cipherstring)
 
@@ -47,7 +47,7 @@ func decrypt(cipherstring string, keystring string) string {
 	return string(ciphertext)
 }
 
-func encrypt(plainstring, keystring string) string {
+func Encrypt(plainstring, keystring string) string {
 	// Byte array of the string
 	plaintext := []byte(plainstring)
 
