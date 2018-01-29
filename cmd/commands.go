@@ -59,4 +59,28 @@ func (c *CLI) RegisterCommands() {
 			}
 		}
 	})
+
+	c.Command("price", "Get current price", func(cmd *cli.Cmd) {
+		var (
+			exname       = cmd.StringArg("EX", "bigone", "The Exchange to query")
+			currencypair = cmd.StringArg("CP", "btc_usd", "CurrencyPair to query(lower case)")
+		)
+
+		cmd.Action = func() {
+			Init(*bcexKey)
+			ex := GetEx(*exname)
+			if ex == nil {
+				fmt.Println(*exname, ": not supported")
+				return
+			}
+
+			cp := NewCurrencyPair2(*currencypair)
+			price, err := ex.GetPrice(&cp)
+			if err != nil {
+				fmt.Println("Error: ", err)
+			} else {
+				fmt.Printf("%0.8f\n", price.Price)
+			}
+		}
+	})
 }

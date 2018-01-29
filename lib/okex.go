@@ -22,7 +22,8 @@ type Okex struct {
 
 var okex = Okex{name: "okex"}
 
-func (ok *Okex) createReq(method, path string, sign bool) *http.Request {
+func (ok *Okex) createReq(method, path string,
+	params map[string][]string, sign bool) *http.Request {
 	header := map[string][]string{
 		"Content-Type": {`application/x-www-form-urlencoded`},
 	}
@@ -33,17 +34,25 @@ func (ok *Okex) createReq(method, path string, sign bool) *http.Request {
 	}
 
 	req.URL, _ = url.Parse("https://www.okex.com" + path)
-	params := map[string][]string{
-		"api_key": {okex.accesskeyid},
-	}
-
 	if sign {
+		sign_params := map[string][]string{
+			"api_key": {okex.accesskeyid},
+		}
+
+		for k, v := range params {
+			sign_params[k] = v
+		}
+
 		q := req.URL.Query()
-		q = params
+		q = sign_params
 		//q2 := q
 		//q2.Add("secret_key", okex.secretkeyid)
 		data := q.Encode() + "&secret_key=" + okex.secretkeyid
 		q.Add("sign", strings.ToUpper(GetMD5Hash(data)))
+		req.URL.RawQuery = q.Encode()
+	} else {
+		q := req.URL.Query()
+		q = params
 		req.URL.RawQuery = q.Encode()
 	}
 	return req
@@ -58,7 +67,7 @@ func (ok *Okex) getResp(req *http.Request) (int, []byte) {
 }
 
 func (ok *Okex) GetBalance() (balances []Balance, err error) {
-	req := ok.createReq("POST", "/api/v1/userinfo.do", true)
+	req := ok.createReq("POST", "/api/v1/userinfo.do", nil, true)
 	status, body := ok.getResp(req)
 	js, _ := NewJson(body)
 
@@ -94,7 +103,7 @@ func (ok *Okex) GetBalance() (balances []Balance, err error) {
 }
 
 func (ok *Okex) Alive() bool {
-	req := ok.createReq("GET", "/api/v1/exchange_rate.do", false)
+	req := ok.createReq("GET", "/api/v1/exchange_rate.do", nil, false)
 	status, _ := ok.getResp(req)
 	_, err := ProcessResp(status, nil, isAlive, notAlive)
 
@@ -108,6 +117,38 @@ func (ok *Okex) Alive() bool {
 func (ok *Okex) SetKey(access, secret string) {
 	ok.accesskeyid = access
 	ok.secretkeyid = secret
+}
+
+func (ok *Okex) GetPrice(cp *CurrencyPair) (price Price, err error) {
+	params := map[string][]string{
+		"symbol": {cp.ToSymbol("_")},
+	}
+
+	req := ok.createReq("GET", "/api/v1/ticker.do", params, false)
+	status, body := ok.getResp(req)
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
+		reason, e := js.Get("error_code").Int64()
+		if e == nil {
+			err = errors.New(strconv.FormatInt(reason, 10))
+			return nil, err
+		}
+
+		last_s, _ := js.Get("ticker").Get("last").String()
+		last, _ := strconv.ParseFloat(last_s, 64)
+		return Price{last}, nil
+	}
+
+	respErr := func(js *Json) (interface{}, error) {
+		return nil, errors.New("Unknow")
+	}
+
+	p, err := ProcessResp(status, js, respOk, respErr)
+	if err == nil {
+		price = p.(Price)
+	}
+	return
 }
 
 func init() {

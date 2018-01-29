@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	. "github.com/bitly/go-simplejson"
@@ -35,13 +36,13 @@ func (bn *Binance) createReq(method, path string,
 
 	req.URL, _ = url.Parse("https://api.binance.com" + path)
 
+	q := req.URL.Query()
+	q = params
 	if sign {
-		q := req.URL.Query()
-		q = params
 		q.Add("signature", ComputeHmac256(q.Encode(), binance.secretkeyid))
-		req.URL.RawQuery = q.Encode()
 		req.Header.Add("X-MBX-APIKEY", binance.accesskeyid)
 	}
+	req.URL.RawQuery = q.Encode()
 	return req
 }
 
@@ -104,6 +105,34 @@ func (bn *Binance) Alive() bool {
 func (bn *Binance) SetKey(access, secret string) {
 	bn.accesskeyid = access
 	bn.secretkeyid = secret
+}
+
+func (bn *Binance) GetPrice(cp *CurrencyPair) (price Price, err error) {
+	params := map[string][]string{
+		"symbol": {strings.ToUpper(cp.ToSymbol(""))},
+	}
+	req := bn.createReq("GET", "/api/v3/ticker/price", params, false)
+	status, body := bn.getResp(req)
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
+		price_s, _ := js.Get("price").String()
+		price, _ := strconv.ParseFloat(price_s, 64)
+
+		return Price{price}, nil
+	}
+
+	respErr := func(js *Json) (interface{}, error) {
+		reason, _ := js.Get("msg").String()
+		err = errors.New(reason)
+		return nil, err
+	}
+
+	p, err := ProcessResp(status, js, respOk, respErr)
+	if err == nil {
+		price = p.(Price)
+	}
+	return
 }
 
 func init() {

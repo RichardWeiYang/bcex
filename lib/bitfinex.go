@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strconv"
+	"strings"
 	"time"
 
 	. "github.com/bitly/go-simplejson"
@@ -105,6 +107,30 @@ func (bf *Bitfinex) Alive() bool {
 func (bf *Bitfinex) SetKey(access, secret string) {
 	bf.accesskeyid = access
 	bf.secretkeyid = secret
+}
+
+func (bf *Bitfinex) GetPrice(cp *CurrencyPair) (price Price, err error) {
+	req := bf.createReq("GET", "/v1/pubticker/"+strings.ToUpper(cp.ToSymbol("")), false)
+	status, body := bf.getResp(req)
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
+		price_s, _ := js.Get("last_price").String()
+		price, _ := strconv.ParseFloat(price_s, 64)
+		return Price{price}, nil
+	}
+
+	respErr := func(js *Json) (interface{}, error) {
+		reason, _ := js.Get("message").String()
+		err = errors.New(reason)
+		return nil, err
+	}
+
+	p, err := ProcessResp(status, js, respOk, respErr)
+	if err == nil {
+		price = p.(Price)
+	}
+	return
 }
 
 func init() {

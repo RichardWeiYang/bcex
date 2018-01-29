@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strconv"
+	"strings"
 
 	. "github.com/bitly/go-simplejson"
 )
@@ -92,6 +94,31 @@ func (bo *BigOne) Alive() bool {
 func (bo *BigOne) SetKey(access, secret string) {
 	bo.accesskeyid = access
 	bo.secretkeyid = GetUUID()
+}
+
+func (bo *BigOne) GetPrice(cp *CurrencyPair) (price Price, err error) {
+	req := bo.createReq("GET", "/markets/"+strings.ToUpper(cp.ToSymbol("-")))
+	status, body := bo.getResp(req)
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
+		price_s, _ := js.Get("data").Get("ticker").Get("price").String()
+		price, _ := strconv.ParseFloat(price_s, 64)
+		return Price{price}, nil
+	}
+
+	respErr := func(js *Json) (interface{}, error) {
+		reason, _ := js.Get("error").Get("description").String()
+		err = errors.New(reason)
+		return nil, err
+	}
+
+	p, err := ProcessResp(status, js, respOk, respErr)
+	if err == nil {
+		price = p.(Price)
+	}
+
+	return
 }
 
 func init() {

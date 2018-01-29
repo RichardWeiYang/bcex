@@ -18,11 +18,6 @@ type ExchangeKey struct {
 	SecretKeyId string `json:"SecretKeyId"`
 }
 
-type Balance struct {
-	Currency string
-	Balance  string
-}
-
 var keys map[string]ExchangeKey
 var initialized = false
 var privkey = ""
@@ -81,10 +76,20 @@ func ReadConf() {
 	json.Unmarshal([]byte(plain), &keys)
 }
 
+type Balance struct {
+	Currency string
+	Balance  string
+}
+
+type Price struct {
+	Price float64
+}
+
 type Exchange interface {
 	SetKey(access, secret string)
 	Alive() bool
 	GetBalance() ([]Balance, error)
+	GetPrice(cp *CurrencyPair) (Price, error)
 }
 
 var ex = map[string]Exchange{}
