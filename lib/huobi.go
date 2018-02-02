@@ -20,6 +20,10 @@ type Huobi struct {
 	account_id               string
 }
 
+func (hb *Huobi) respErr(js *Json) (interface{}, error) {
+	return nil, errors.New("Unknow")
+}
+
 func (hb *Huobi) sendReq(method, path string,
 	params map[string][]string, sign bool) (int, []byte) {
 	header := map[string][]string{
@@ -82,11 +86,7 @@ func (hb *Huobi) GetAccount() (account string, err error) {
 		return nil, errors.New("Unknow")
 	}
 
-	respErr := func(js *Json) (interface{}, error) {
-		return nil, errors.New("Unknow")
-	}
-
-	acc, err := ProcessResp(status, js, respOk, respErr)
+	acc, err := ProcessResp(status, js, respOk, hb.respErr)
 	if err == nil {
 		account = acc.(string)
 	}
@@ -128,11 +128,7 @@ func (hb *Huobi) GetBalance() (balances []Balance, err error) {
 		return nil, errors.New("Unknow")
 	}
 
-	respErr := func(js *Json) (interface{}, error) {
-		return nil, errors.New("Unknow")
-	}
-
-	b, err := ProcessResp(status, js, respOk, respErr)
+	b, err := ProcessResp(status, js, respOk, hb.respErr)
 	if err == nil {
 		balances = b.([]Balance)
 	}
@@ -182,11 +178,7 @@ func (hb *Huobi) GetPrice(cp *CurrencyPair) (price Price, err error) {
 		return nil, errors.New("Unknow")
 	}
 
-	respErr := func(js *Json) (interface{}, error) {
-		return nil, errors.New("Unknow")
-	}
-
-	p, err := ProcessResp(status, js, respOk, respErr)
+	p, err := ProcessResp(status, js, respOk, hb.respErr)
 	if err == nil {
 		price = p.(Price)
 	}
@@ -217,11 +209,7 @@ func (hb *Huobi) GetSymbols() (symbols []string, err error) {
 		return nil, errors.New("Unknow")
 	}
 
-	respErr := func(js *Json) (interface{}, error) {
-		return nil, errors.New("Unknow")
-	}
-
-	s, err := ProcessResp(status, js, respOk, respErr)
+	s, err := ProcessResp(status, js, respOk, hb.respErr)
 	if err == nil {
 		symbols = s.([]string)
 	}

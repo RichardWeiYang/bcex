@@ -22,6 +22,12 @@ type Bitfinex struct {
 	accesskeyid, secretkeyid string
 }
 
+func (bf *Bitfinex) respErr(js *Json) (interface{}, error) {
+	reason, _ := js.Get("message").String()
+	err := errors.New(reason)
+	return nil, err
+}
+
 func (bf *Bitfinex) sendReq(method, path string, sign bool) (int, []byte) {
 	header := map[string][]string{
 		"Content-Type": {`application/json`},
@@ -67,13 +73,7 @@ func (bf *Bitfinex) GetBalance() (balances []Balance, err error) {
 		return balances, nil
 	}
 
-	respErr := func(js *Json) (interface{}, error) {
-		reason, _ := js.Get("message").String()
-		err = errors.New(reason)
-		return nil, err
-	}
-
-	b, err := ProcessResp(status, js, respOk, respErr)
+	b, err := ProcessResp(status, js, respOk, bf.respErr)
 	if err == nil {
 		balances = b.([]Balance)
 	}
@@ -105,13 +105,7 @@ func (bf *Bitfinex) GetPrice(cp *CurrencyPair) (price Price, err error) {
 		return Price{price}, nil
 	}
 
-	respErr := func(js *Json) (interface{}, error) {
-		reason, _ := js.Get("message").String()
-		err = errors.New(reason)
-		return nil, err
-	}
-
-	p, err := ProcessResp(status, js, respOk, respErr)
+	p, err := ProcessResp(status, js, respOk, bf.respErr)
 	if err == nil {
 		price = p.(Price)
 	}
@@ -133,13 +127,7 @@ func (bf *Bitfinex) GetSymbols() (symbols []string, err error) {
 		return s, nil
 	}
 
-	respErr := func(js *Json) (interface{}, error) {
-		reason, _ := js.Get("message").String()
-		err = errors.New(reason)
-		return nil, err
-	}
-
-	s, err := ProcessResp(status, js, respOk, respErr)
+	s, err := ProcessResp(status, js, respOk, bf.respErr)
 	if err == nil {
 		symbols = s.([]string)
 	}

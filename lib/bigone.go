@@ -18,6 +18,12 @@ type BigOne struct {
 	accesskeyid, secretkeyid string
 }
 
+func (bo *BigOne) respErr(js *Json) (interface{}, error) {
+	reason, _ := js.Get("error").Get("description").String()
+	err := errors.New(reason)
+	return nil, err
+}
+
 func (bo *BigOne) sendReq(method, path string, sign bool) (int, []byte) {
 	var header map[string][]string
 	if sign {
@@ -56,13 +62,7 @@ func (bo *BigOne) GetBalance() (balances []Balance, err error) {
 		return balances, nil
 	}
 
-	respErr := func(js *Json) (interface{}, error) {
-		reason, _ := js.Get("error").Get("description").String()
-		err = errors.New(reason)
-		return nil, err
-	}
-
-	b, err := ProcessResp(status, js, respOk, respErr)
+	b, err := ProcessResp(status, js, respOk, bo.respErr)
 	if err == nil {
 		balances = b.([]Balance)
 	}
@@ -97,13 +97,7 @@ func (bo *BigOne) GetPrice(cp *CurrencyPair) (price Price, err error) {
 		return Price{price}, nil
 	}
 
-	respErr := func(js *Json) (interface{}, error) {
-		reason, _ := js.Get("error").Get("description").String()
-		err = errors.New(reason)
-		return nil, err
-	}
-
-	p, err := ProcessResp(status, js, respOk, respErr)
+	p, err := ProcessResp(status, js, respOk, bo.respErr)
 	if err == nil {
 		price = p.(Price)
 	}
@@ -127,13 +121,7 @@ func (bo *BigOne) GetSymbols() (symbols []string, err error) {
 		return s, nil
 	}
 
-	respErr := func(js *Json) (interface{}, error) {
-		reason, _ := js.Get("error").Get("description").String()
-		err = errors.New(reason)
-		return nil, err
-	}
-
-	s, err := ProcessResp(status, js, respOk, respErr)
+	s, err := ProcessResp(status, js, respOk, bo.respErr)
 	if err == nil {
 		symbols = s.([]string)
 	}

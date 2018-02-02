@@ -19,6 +19,12 @@ type Binance struct {
 	accesskeyid, secretkeyid string
 }
 
+func (bn *Binance) respErr(js *Json) (interface{}, error) {
+	reason, _ := js.Get("msg").String()
+	err := errors.New(reason)
+	return nil, err
+}
+
 func (bn *Binance) sendReq(method, path string,
 	params map[string][]string, sign bool) (int, []byte) {
 	header := map[string][]string{
@@ -63,13 +69,7 @@ func (bn *Binance) GetBalance() (balances []Balance, err error) {
 		return balances, nil
 	}
 
-	respErr := func(js *Json) (interface{}, error) {
-		reason, _ := js.Get("msg").String()
-		err = errors.New(reason)
-		return nil, err
-	}
-
-	b, err := ProcessResp(status, js, respOk, respErr)
+	b, err := ProcessResp(status, js, respOk, bn.respErr)
 	if err == nil {
 		balances = b.([]Balance)
 	}
@@ -107,13 +107,7 @@ func (bn *Binance) GetPrice(cp *CurrencyPair) (price Price, err error) {
 		return Price{price}, nil
 	}
 
-	respErr := func(js *Json) (interface{}, error) {
-		reason, _ := js.Get("msg").String()
-		err = errors.New(reason)
-		return nil, err
-	}
-
-	p, err := ProcessResp(status, js, respOk, respErr)
+	p, err := ProcessResp(status, js, respOk, bn.respErr)
 	if err == nil {
 		price = p.(Price)
 	}
@@ -136,13 +130,7 @@ func (bn *Binance) GetSymbols() (symbols []string, err error) {
 		return s, nil
 	}
 
-	respErr := func(js *Json) (interface{}, error) {
-		reason, _ := js.Get("msg").String()
-		err = errors.New(reason)
-		return nil, err
-	}
-
-	s, err := ProcessResp(status, js, respOk, respErr)
+	s, err := ProcessResp(status, js, respOk, bn.respErr)
 	if err == nil {
 		symbols = s.([]string)
 	}
