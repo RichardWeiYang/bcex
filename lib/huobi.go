@@ -24,6 +24,10 @@ func (hb *Huobi) respErr(js *Json) (interface{}, error) {
 	return nil, errors.New("Unknow")
 }
 
+func (hb *Huobi) ToSymbol(cp *CurrencyPair) string {
+	return cp.ToSymbol("")
+}
+
 func (hb *Huobi) sendReq(method, path string,
 	params map[string][]string, sign bool) (int, []byte) {
 	header := map[string][]string{
@@ -154,7 +158,7 @@ func (hb *Huobi) SetKey(access, secret string) {
 
 func (hb *Huobi) GetPrice(cp *CurrencyPair) (price Price, err error) {
 	params := map[string][]string{
-		"symbol": {cp.ToSymbol("")},
+		"symbol": {hb.ToSymbol(cp)},
 	}
 
 	status, body := hb.sendReq("GET", "/market/trade", params, false)

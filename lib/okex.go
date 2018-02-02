@@ -22,6 +22,10 @@ func (ok *Okex) respErr(js *Json) (interface{}, error) {
 	return nil, errors.New("Unknow")
 }
 
+func (ok *Okex) ToSymbol(cp *CurrencyPair) string {
+	return cp.ToSymbol("_")
+}
+
 func (ok *Okex) sendReq(method, path string,
 	params map[string][]string, sign bool) (int, []byte) {
 	header := map[string][]string{
@@ -107,7 +111,7 @@ func (ok *Okex) SetKey(access, secret string) {
 
 func (ok *Okex) GetPrice(cp *CurrencyPair) (price Price, err error) {
 	params := map[string][]string{
-		"symbol": {cp.ToSymbol("_")},
+		"symbol": {ok.ToSymbol(cp)},
 	}
 
 	status, body := ok.sendReq("GET", "/api/v1/ticker.do", params, false)

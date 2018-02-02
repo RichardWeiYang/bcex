@@ -25,6 +25,10 @@ func (bn *Binance) respErr(js *Json) (interface{}, error) {
 	return nil, err
 }
 
+func (bn *Binance) ToSymbol(cp *CurrencyPair) string {
+	return strings.ToUpper(cp.ToSymbol(""))
+}
+
 func (bn *Binance) sendReq(method, path string,
 	params map[string][]string, sign bool) (int, []byte) {
 	header := map[string][]string{
@@ -95,7 +99,7 @@ func (bn *Binance) SetKey(access, secret string) {
 
 func (bn *Binance) GetPrice(cp *CurrencyPair) (price Price, err error) {
 	params := map[string][]string{
-		"symbol": {strings.ToUpper(cp.ToSymbol(""))},
+		"symbol": {bn.ToSymbol(cp)},
 	}
 	status, body := bn.sendReq("GET", "/api/v3/ticker/price", params, false)
 	js, _ := NewJson(body)

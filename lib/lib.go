@@ -20,6 +20,7 @@ type Price struct {
 }
 
 type Exchange interface {
+	ToSymbol(cp *CurrencyPair) string
 	SetKey(access, secret string)
 	Alive() bool
 	GetBalance() ([]Balance, error)

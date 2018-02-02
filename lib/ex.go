@@ -16,6 +16,10 @@ func (exe *Ex) respErr(js *Json) (interface{}, error) {
 	return nil, nil
 }
 
+func (exe *Ex) ToSymbol(cp *CurrencyPair) string {
+	return cp.ToSymbol("_")
+}
+
 func (exe *Ex) sendReq(method, path string,
 	params map[string][]string, sign bool) (int, []byte) {
 	header := map[string][]string{

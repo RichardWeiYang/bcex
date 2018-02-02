@@ -24,6 +24,10 @@ func (bo *BigOne) respErr(js *Json) (interface{}, error) {
 	return nil, err
 }
 
+func (bo *BigOne) ToSymbol(cp *CurrencyPair) string {
+	return strings.ToUpper(cp.ToSymbol("-"))
+}
+
 func (bo *BigOne) sendReq(method, path string, sign bool) (int, []byte) {
 	var header map[string][]string
 	if sign {
@@ -88,7 +92,7 @@ func (bo *BigOne) SetKey(access, secret string) {
 }
 
 func (bo *BigOne) GetPrice(cp *CurrencyPair) (price Price, err error) {
-	status, body := bo.sendReq("GET", "/markets/"+strings.ToUpper(cp.ToSymbol("-")), false)
+	status, body := bo.sendReq("GET", "/markets/"+bo.ToSymbol(cp), false)
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
