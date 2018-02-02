@@ -18,6 +18,10 @@ type Okex struct {
 	accesskeyid, secretkeyid string
 }
 
+func (ok *Okex) respErr(js *Json) (interface{}, error) {
+	return nil, errors.New("Unknow")
+}
+
 func (ok *Okex) sendReq(method, path string,
 	params map[string][]string, sign bool) (int, []byte) {
 	header := map[string][]string{
@@ -77,11 +81,7 @@ func (ok *Okex) GetBalance() (balances []Balance, err error) {
 		return nil, errors.New("Unknow")
 	}
 
-	respErr := func(js *Json) (interface{}, error) {
-		return nil, errors.New("Unknow")
-	}
-
-	b, err := ProcessResp(status, js, respOk, respErr)
+	b, err := ProcessResp(status, js, respOk, ok.respErr)
 	if err == nil {
 		balances = b.([]Balance)
 	}
@@ -125,11 +125,7 @@ func (ok *Okex) GetPrice(cp *CurrencyPair) (price Price, err error) {
 		return Price{last}, nil
 	}
 
-	respErr := func(js *Json) (interface{}, error) {
-		return nil, errors.New("Unknow")
-	}
-
-	p, err := ProcessResp(status, js, respOk, respErr)
+	p, err := ProcessResp(status, js, respOk, ok.respErr)
 	if err == nil {
 		price = p.(Price)
 	}
@@ -157,11 +153,7 @@ func (ok *Okex) GetSymbols() (symbols []string, err error) {
 		return s, nil
 	}
 
-	respErr := func(js *Json) (interface{}, error) {
-		return nil, errors.New("Unknow")
-	}
-
-	s, err := ProcessResp(status, js, respOk, respErr)
+	s, err := ProcessResp(status, js, respOk, ok.respErr)
 	if err == nil {
 		symbols = s.([]string)
 	}

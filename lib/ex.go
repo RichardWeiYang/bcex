@@ -4,10 +4,16 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+
+	. "github.com/bitly/go-simplejson"
 )
 
 type Ex struct {
 	accesskeyid, secretkeyid string
+}
+
+func (exe *Ex) respErr(js *Json) (interface{}, error) {
+	return nil, nil
 }
 
 func (exe *Ex) sendReq(method, path string,
