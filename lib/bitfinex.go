@@ -28,6 +28,10 @@ func (bf *Bitfinex) respErr(js *Json) (interface{}, error) {
 	return nil, err
 }
 
+func (bf *Bitfinex) ToSymbol(cp *CurrencyPair) string {
+	return strings.ToUpper(cp.ToSymbol(""))
+}
+
 func (bf *Bitfinex) sendReq(method, path string, sign bool) (int, []byte) {
 	header := map[string][]string{
 		"Content-Type": {`application/json`},
@@ -96,7 +100,7 @@ func (bf *Bitfinex) SetKey(access, secret string) {
 }
 
 func (bf *Bitfinex) GetPrice(cp *CurrencyPair) (price Price, err error) {
-	status, body := bf.sendReq("GET", "/v1/pubticker/"+strings.ToUpper(cp.ToSymbol("")), false)
+	status, body := bf.sendReq("GET", "/v1/pubticker/"+bf.ToSymbol(cp), false)
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
