@@ -61,6 +61,10 @@ func (exe *Ex) GetPrice(cp *CurrencyPair) (price Price, err error) {
 	return
 }
 
+func (exe *Ex) GetSymbols() (symbols []string, err error) {
+	return
+}
+
 func NewEx() Exchange {
 	return new(Ex)
 }

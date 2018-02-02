@@ -136,6 +136,38 @@ func (ok *Okex) GetPrice(cp *CurrencyPair) (price Price, err error) {
 	return
 }
 
+func (ok *Okex) GetSymbols() (symbols []string, err error) {
+	status, body := ok.sendReq("GET", "/v2/markets/products", nil, false)
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
+		reason, e := js.Get("error_code").Int64()
+		if e == nil {
+			err = errors.New(strconv.FormatInt(reason, 10))
+			return nil, err
+		}
+
+		var s []string
+		data, _ := js.Get("data").Array()
+		for _, d := range data {
+			dd := d.(map[string]interface{})
+			symbol := dd["symbol"].(string)
+			s = append(s, symbol)
+		}
+		return s, nil
+	}
+
+	respErr := func(js *Json) (interface{}, error) {
+		return nil, errors.New("Unknow")
+	}
+
+	s, err := ProcessResp(status, js, respOk, respErr)
+	if err == nil {
+		symbols = s.([]string)
+	}
+	return
+}
+
 func NewOkex() Exchange {
 	return new(Okex)
 }

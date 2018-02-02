@@ -18,11 +18,16 @@ type BigOne struct {
 	accesskeyid, secretkeyid string
 }
 
-func (bo *BigOne) sendReq(method, path string) (int, []byte) {
-	header := map[string][]string{
-		"Authorization": {"Bearer " + bo.accesskeyid},
-		"User-Agent":    {`standard browser user agent format`},
-		"Big-Device-Id": {bo.secretkeyid},
+func (bo *BigOne) sendReq(method, path string, sign bool) (int, []byte) {
+	var header map[string][]string
+	if sign {
+		header = map[string][]string{
+			"Authorization": {"Bearer " + bo.accesskeyid},
+			"User-Agent":    {`standard browser user agent format`},
+			"Big-Device-Id": {bo.secretkeyid},
+		}
+	} else {
+		header = map[string][]string{}
 	}
 
 	req := &http.Request{
@@ -35,7 +40,7 @@ func (bo *BigOne) sendReq(method, path string) (int, []byte) {
 }
 
 func (bo *BigOne) GetBalance() (balances []Balance, err error) {
-	status, body := bo.sendReq("GET", "/accounts")
+	status, body := bo.sendReq("GET", "/accounts", true)
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
@@ -66,7 +71,7 @@ func (bo *BigOne) GetBalance() (balances []Balance, err error) {
 }
 
 func (bo *BigOne) Alive() bool {
-	status, _ := bo.sendReq("GET", "/accounts")
+	status, _ := bo.sendReq("GET", "/accounts", true)
 
 	_, err := ProcessResp(status, nil, isAlive, notAlive)
 
@@ -83,7 +88,7 @@ func (bo *BigOne) SetKey(access, secret string) {
 }
 
 func (bo *BigOne) GetPrice(cp *CurrencyPair) (price Price, err error) {
-	status, body := bo.sendReq("GET", "/markets/"+strings.ToUpper(cp.ToSymbol("-")))
+	status, body := bo.sendReq("GET", "/markets/"+strings.ToUpper(cp.ToSymbol("-")), false)
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
@@ -103,6 +108,35 @@ func (bo *BigOne) GetPrice(cp *CurrencyPair) (price Price, err error) {
 		price = p.(Price)
 	}
 
+	return
+}
+
+func (bo *BigOne) GetSymbols() (symbols []string, err error) {
+	status, body := bo.sendReq("GET", "/markets", false)
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
+		var s []string
+		data, _ := js.Get("data").Array()
+		for _, d := range data {
+			dd := d.(map[string]interface{})
+			base := strings.ToLower(dd["base"].(string))
+			quote := strings.ToLower(dd["quote"].(string))
+			s = append(s, quote+"_"+base)
+		}
+		return s, nil
+	}
+
+	respErr := func(js *Json) (interface{}, error) {
+		reason, _ := js.Get("error").Get("description").String()
+		err = errors.New(reason)
+		return nil, err
+	}
+
+	s, err := ProcessResp(status, js, respOk, respErr)
+	if err == nil {
+		symbols = s.([]string)
+	}
 	return
 }
 

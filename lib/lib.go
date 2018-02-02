@@ -24,6 +24,7 @@ type Exchange interface {
 	Alive() bool
 	GetBalance() ([]Balance, error)
 	GetPrice(cp *CurrencyPair) (Price, error)
+	GetSymbols() ([]string, error)
 }
 
 type NewExchange func() Exchange

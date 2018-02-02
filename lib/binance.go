@@ -120,6 +120,35 @@ func (bn *Binance) GetPrice(cp *CurrencyPair) (price Price, err error) {
 	return
 }
 
+func (bn *Binance) GetSymbols() (symbols []string, err error) {
+	status, body := bn.sendReq("GET", "/api/v1/exchangeInfo", nil, false)
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
+		var s []string
+		data, _ := js.Get("symbols").Array()
+		for _, d := range data {
+			dd := d.(map[string]interface{})
+			base := strings.ToLower(dd["baseAsset"].(string))
+			quote := strings.ToLower(dd["quoteAsset"].(string))
+			s = append(s, base+"_"+quote)
+		}
+		return s, nil
+	}
+
+	respErr := func(js *Json) (interface{}, error) {
+		reason, _ := js.Get("msg").String()
+		err = errors.New(reason)
+		return nil, err
+	}
+
+	s, err := ProcessResp(status, js, respOk, respErr)
+	if err == nil {
+		symbols = s.([]string)
+	}
+	return
+}
+
 func NewBinance() Exchange {
 	return new(Binance)
 }
