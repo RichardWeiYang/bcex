@@ -88,4 +88,29 @@ func (c *CLI) RegisterCommands() {
 			}
 		}
 	})
+
+	c.Command("symbols", "Get supported symbols", func(cmd *cli.Cmd) {
+		var (
+			exname = cmd.StringArg("EX", "bigone", "The Exchange to query")
+		)
+
+		cmd.Action = func() {
+			Init(*bcexKey)
+			ex := GetEx(*exname)
+			if ex == nil {
+				fmt.Println(*exname, ": not supported")
+				return
+			}
+
+			symbols, err := ex.GetSymbols()
+			if err != nil {
+				fmt.Println("Error: ", err)
+			} else {
+				for _, s := range symbols {
+					fmt.Printf("%s ", s)
+				}
+				fmt.Println()
+			}
+		}
+	})
 }

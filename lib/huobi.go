@@ -193,6 +193,41 @@ func (hb *Huobi) GetPrice(cp *CurrencyPair) (price Price, err error) {
 	return
 }
 
+func (hb *Huobi) GetSymbols() (symbols []string, err error) {
+	status, body := hb.sendReq("GET", "/v1/common/symbols", nil, false)
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
+		status, _ := js.Get("status").String()
+		if status == "ok" {
+			var s []string
+			data, _ := js.Get("data").Array()
+			for _, d := range data {
+				dd := d.(map[string]interface{})
+				base := dd["base-currency"].(string)
+				quote := dd["quote-currency"].(string)
+				s = append(s, base+"_"+quote)
+			}
+			return s, nil
+		} else {
+			reason, _ := js.Get("err-msg").String()
+			err = errors.New(reason)
+			return nil, err
+		}
+		return nil, errors.New("Unknow")
+	}
+
+	respErr := func(js *Json) (interface{}, error) {
+		return nil, errors.New("Unknow")
+	}
+
+	s, err := ProcessResp(status, js, respOk, respErr)
+	if err == nil {
+		symbols = s.([]string)
+	}
+	return
+}
+
 func NewHuobi() Exchange {
 	return new(Huobi)
 }
