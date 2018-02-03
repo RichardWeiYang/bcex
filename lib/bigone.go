@@ -132,6 +132,36 @@ func (bo *BigOne) GetSymbols() (symbols []string, err error) {
 	return
 }
 
+func (bo *BigOne) GetDepth(cp *CurrencyPair) (depth Depth, err error) {
+	status, body := bo.sendReq("GET", "/markets/"+bo.ToSymbol(cp), false)
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
+		var depth Depth
+		asks, _ := js.Get("data").Get("depth").Get("asks").Array()
+		for _, a := range asks {
+			uu := a.(map[string]interface{})
+			price, _ := strconv.ParseFloat(uu["price"].(string), 64)
+			amount, _ := strconv.ParseFloat(uu["amount"].(string), 64)
+			depth.Asks = append([]Unit{Unit{price, amount}}, depth.Asks...)
+		}
+		bids, _ := js.Get("data").Get("depth").Get("bids").Array()
+		for _, b := range bids {
+			uu := b.(map[string]interface{})
+			price, _ := strconv.ParseFloat(uu["price"].(string), 64)
+			amount, _ := strconv.ParseFloat(uu["amount"].(string), 64)
+			depth.Bids = append(depth.Bids, Unit{price, amount})
+		}
+		return depth, nil
+	}
+
+	d, err := ProcessResp(status, js, respOk, bo.respErr)
+	if err == nil {
+		depth = d.(Depth)
+	}
+	return
+}
+
 func NewBigOne() Exchange {
 	return new(BigOne)
 }

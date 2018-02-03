@@ -220,6 +220,49 @@ func (hb *Huobi) GetSymbols() (symbols []string, err error) {
 	return
 }
 
+func (hb *Huobi) GetDepth(cp *CurrencyPair) (depth Depth, err error) {
+	params := map[string][]string{
+		"symbol": {hb.ToSymbol(cp)},
+		"type":   {"step0"},
+	}
+
+	status, body := hb.sendReq("GET", "/market/depth", params, false)
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
+		status, _ := js.Get("status").String()
+		if status == "ok" {
+			var depth Depth
+			asks, _ := js.Get("tick").Get("asks").Array()
+			for _, a := range asks {
+				uu := a.([]interface{})
+				price, _ := uu[0].(json.Number).Float64()
+				amount, _ := uu[1].(json.Number).Float64()
+				depth.Asks = append([]Unit{Unit{price, amount}}, depth.Asks...)
+			}
+			bids, _ := js.Get("tick").Get("bids").Array()
+			for _, b := range bids {
+				uu := b.([]interface{})
+				price, _ := uu[0].(json.Number).Float64()
+				amount, _ := uu[1].(json.Number).Float64()
+				depth.Bids = append(depth.Bids, Unit{price, amount})
+			}
+			return depth, nil
+		} else {
+			reason, _ := js.Get("err-msg").String()
+			err = errors.New(reason)
+			return nil, err
+		}
+		return nil, errors.New("Unknow")
+	}
+
+	d, err := ProcessResp(status, js, respOk, hb.respErr)
+	if err == nil {
+		depth = d.(Depth)
+	}
+	return
+}
+
 func NewHuobi() Exchange {
 	return new(Huobi)
 }

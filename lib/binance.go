@@ -141,6 +141,39 @@ func (bn *Binance) GetSymbols() (symbols []string, err error) {
 	return
 }
 
+func (bn *Binance) GetDepth(cp *CurrencyPair) (depth Depth, err error) {
+	params := map[string][]string{
+		"symbol": {bn.ToSymbol(cp)},
+	}
+	status, body := bn.sendReq("GET", "/api/v1/depth", params, false)
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
+		var depth Depth
+		asks, _ := js.Get("asks").Array()
+		for _, a := range asks {
+			uu := a.([]interface{})
+			price, _ := strconv.ParseFloat(uu[0].(string), 64)
+			amount, _ := strconv.ParseFloat(uu[1].(string), 64)
+			depth.Asks = append([]Unit{Unit{price, amount}}, depth.Asks...)
+		}
+		bids, _ := js.Get("bids").Array()
+		for _, b := range bids {
+			uu := b.([]interface{})
+			price, _ := strconv.ParseFloat(uu[0].(string), 64)
+			amount, _ := strconv.ParseFloat(uu[1].(string), 64)
+			depth.Bids = append(depth.Bids, Unit{price, amount})
+		}
+		return depth, nil
+	}
+
+	d, err := ProcessResp(status, js, respOk, bn.respErr)
+	if err == nil {
+		depth = d.(Depth)
+	}
+	return
+}
+
 func NewBinance() Exchange {
 	return new(Binance)
 }
