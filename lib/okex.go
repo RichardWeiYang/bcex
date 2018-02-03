@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/url"
@@ -160,6 +161,46 @@ func (ok *Okex) GetSymbols() (symbols []string, err error) {
 	s, err := ProcessResp(status, js, respOk, ok.respErr)
 	if err == nil {
 		symbols = s.([]string)
+	}
+	return
+}
+
+func (ok *Okex) GetDepth(cp *CurrencyPair) (depth Depth, err error) {
+	params := map[string][]string{
+		"symbol": {ok.ToSymbol(cp)},
+	}
+
+	status, body := ok.sendReq("GET", "/api/v1/depth.do", params, false)
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
+		reason, e := js.Get("error_code").Int64()
+		if e == nil {
+			err = errors.New(strconv.FormatInt(reason, 10))
+			return nil, err
+		}
+
+		var depth Depth
+		asks, _ := js.Get("asks").Array()
+		for _, a := range asks {
+			uu := a.([]interface{})
+			price, _ := uu[0].(json.Number).Float64()
+			amount, _ := uu[1].(json.Number).Float64()
+			depth.Asks = append(depth.Asks, Unit{price, amount})
+		}
+		bids, _ := js.Get("bids").Array()
+		for _, b := range bids {
+			uu := b.([]interface{})
+			price, _ := uu[0].(json.Number).Float64()
+			amount, _ := uu[1].(json.Number).Float64()
+			depth.Bids = append(depth.Bids, Unit{price, amount})
+		}
+		return depth, nil
+	}
+
+	d, err := ProcessResp(status, js, respOk, ok.respErr)
+	if err == nil {
+		depth = d.(Depth)
 	}
 	return
 }

@@ -7,6 +7,13 @@ import (
 	"github.com/jawher/mow.cli"
 )
 
+func min(a, b int) int {
+	if a > b {
+		return b
+	}
+	return a
+}
+
 func (c *CLI) RegisterCommands() {
 	// list
 	c.Command("list", "List Exchanges", func(cmd *cli.Cmd) {
@@ -107,6 +114,43 @@ func (c *CLI) RegisterCommands() {
 				fmt.Println("Error: ", err)
 			} else {
 				fmt.Println(symbols)
+			}
+		}
+	})
+
+	c.Command("depth", "Get depth for currency pair", func(cmd *cli.Cmd) {
+		var (
+			exname       = cmd.StringArg("EX", "bigone", "The Exchange to query")
+			currencypair = cmd.StringArg("CP", "btc_usd", "CurrencyPair to query(lower case)")
+		)
+
+		cmd.Action = func() {
+			Init(*bcexKey)
+			ex := GetEx(*exname)
+			if ex == nil {
+				fmt.Println(*exname, ": not supported")
+				return
+			}
+
+			cp := NewCurrencyPair2(*currencypair)
+			depth, err := ex.GetDepth(&cp)
+			if err != nil {
+				fmt.Println("Error: ", err)
+			} else {
+				fmt.Println("Depth of ", *currencypair, "on ", *exname)
+				fmt.Println("\tPrice      \tAmount")
+				fmt.Println("Asks:")
+				for i := min(5, len(depth.Asks)); i >= 1; i-- {
+					fmt.Printf("\t%0.8f\t%0.8f\n",
+						depth.Asks[len(depth.Asks)-i].Price,
+						depth.Asks[len(depth.Asks)-i].Amount)
+				}
+				fmt.Println("Bids:")
+				for i := 0; i < min(5, len(depth.Bids)); i++ {
+					fmt.Printf("\t%0.8f\t%0.8f\n",
+						depth.Bids[i].Price,
+						depth.Bids[i].Amount)
+				}
 			}
 		}
 	})

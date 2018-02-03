@@ -138,6 +138,36 @@ func (bf *Bitfinex) GetSymbols() (symbols []string, err error) {
 	return
 }
 
+func (bf *Bitfinex) GetDepth(cp *CurrencyPair) (depth Depth, err error) {
+	status, body := bf.sendReq("GET", "/v1/book/"+bf.ToSymbol(cp), false)
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
+		var depth Depth
+		asks, _ := js.Get("asks").Array()
+		for _, a := range asks {
+			uu := a.(map[string]interface{})
+			price, _ := strconv.ParseFloat(uu["price"].(string), 64)
+			amount, _ := strconv.ParseFloat(uu["amount"].(string), 64)
+			depth.Asks = append([]Unit{Unit{price, amount}}, depth.Asks...)
+		}
+		bids, _ := js.Get("bids").Array()
+		for _, b := range bids {
+			uu := b.(map[string]interface{})
+			price, _ := strconv.ParseFloat(uu["price"].(string), 64)
+			amount, _ := strconv.ParseFloat(uu["amount"].(string), 64)
+			depth.Bids = append(depth.Bids, Unit{price, amount})
+		}
+		return depth, nil
+	}
+
+	d, err := ProcessResp(status, js, respOk, bf.respErr)
+	if err == nil {
+		depth = d.(Depth)
+	}
+	return
+}
+
 func NewBitfinex() Exchange {
 	return new(Bitfinex)
 }

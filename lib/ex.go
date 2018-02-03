@@ -75,6 +75,10 @@ func (exe *Ex) GetSymbols() (symbols []string, err error) {
 	return
 }
 
+func (exe *Ex) GetDepth(cp *CurrencyPair) (depth Depth, err error) {
+	return
+}
+
 func NewEx() Exchange {
 	return new(Ex)
 }

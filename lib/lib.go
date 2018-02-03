@@ -19,6 +19,16 @@ type Price struct {
 	Price float64
 }
 
+type Unit struct {
+	Price  float64
+	Amount float64
+}
+
+type Depth struct {
+	Bids []Unit
+	Asks []Unit
+}
+
 type Exchange interface {
 	ToSymbol(cp *CurrencyPair) string
 	SetKey(access, secret string)
@@ -26,6 +36,7 @@ type Exchange interface {
 	GetBalance() ([]Balance, error)
 	GetPrice(cp *CurrencyPair) (Price, error)
 	GetSymbols() ([]string, error)
+	GetDepth(cp *CurrencyPair) (Depth, error)
 }
 
 type NewExchange func() Exchange
