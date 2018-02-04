@@ -32,7 +32,13 @@ func (bf *Bitfinex) ToSymbol(cp *CurrencyPair) string {
 	return strings.ToUpper(cp.ToSymbol(""))
 }
 
-func (bf *Bitfinex) sendReq(method, path string, sign bool) (int, []byte) {
+func (bf *Bitfinex) NormSymbol(cp *string) string {
+	tmp := *cp
+	return tmp[:3] + "_" + tmp[3:]
+}
+
+func (bf *Bitfinex) sendReq(method, path string,
+	params map[string]interface{}, sign bool) (int, []byte) {
 	header := map[string][]string{
 		"Content-Type": {`application/json`},
 		"Accept":       {`application/json`},
@@ -50,6 +56,11 @@ func (bf *Bitfinex) sendReq(method, path string, sign bool) (int, []byte) {
 			"request": path,
 			"nonce":   fmt.Sprintf("%v", time.Now().Unix()*10000),
 		}
+
+		for k, v := range params {
+			payload[k] = v
+		}
+
 		payload_json, _ := json.Marshal(payload)
 		payload_enc := base64.StdEncoding.EncodeToString(payload_json)
 
@@ -63,7 +74,7 @@ func (bf *Bitfinex) sendReq(method, path string, sign bool) (int, []byte) {
 }
 
 func (bf *Bitfinex) GetBalance() (balances []Balance, err error) {
-	status, body := bf.sendReq("POST", "/v1/balances", true)
+	status, body := bf.sendReq("POST", "/v1/balances", nil, true)
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
@@ -84,7 +95,7 @@ func (bf *Bitfinex) GetBalance() (balances []Balance, err error) {
 	return
 }
 func (bf *Bitfinex) Alive() bool {
-	status, _ := bf.sendReq("GET", "/v1/symbols", false)
+	status, _ := bf.sendReq("GET", "/v1/symbols", nil, false)
 	_, err := ProcessResp(status, nil, isAlive, notAlive)
 
 	if err != nil {
@@ -100,7 +111,7 @@ func (bf *Bitfinex) SetKey(access, secret string) {
 }
 
 func (bf *Bitfinex) GetPrice(cp *CurrencyPair) (price Price, err error) {
-	status, body := bf.sendReq("GET", "/v1/pubticker/"+bf.ToSymbol(cp), false)
+	status, body := bf.sendReq("GET", "/v1/pubticker/"+bf.ToSymbol(cp), nil, false)
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
@@ -117,7 +128,7 @@ func (bf *Bitfinex) GetPrice(cp *CurrencyPair) (price Price, err error) {
 }
 
 func (bf *Bitfinex) GetSymbols() (symbols []string, err error) {
-	status, body := bf.sendReq("GET", "/v1/symbols", false)
+	status, body := bf.sendReq("GET", "/v1/symbols", nil, false)
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
@@ -139,7 +150,7 @@ func (bf *Bitfinex) GetSymbols() (symbols []string, err error) {
 }
 
 func (bf *Bitfinex) GetDepth(cp *CurrencyPair) (depth Depth, err error) {
-	status, body := bf.sendReq("GET", "/v1/book/"+bf.ToSymbol(cp), false)
+	status, body := bf.sendReq("GET", "/v1/book/"+bf.ToSymbol(cp), nil, false)
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
@@ -164,6 +175,42 @@ func (bf *Bitfinex) GetDepth(cp *CurrencyPair) (depth Depth, err error) {
 	d, err := ProcessResp(status, js, respOk, bf.respErr)
 	if err == nil {
 		depth = d.(Depth)
+	}
+	return
+}
+
+func (bf *Bitfinex) OrderState(s interface{}) string {
+	if s.(bool) {
+		return Cancelled
+	}
+	return Alive
+}
+
+func (bf *Bitfinex) OrderSide(s string) string {
+	return s
+}
+
+func (bf *Bitfinex) NewOrder(o *Order) (id string, err error) {
+	params := map[string]interface{}{
+		"symbol":   bf.ToSymbol(&o.CP),
+		"side":     o.Side,
+		"amount":   strconv.FormatFloat(o.Amount, 'f', -1, 64),
+		"price":    strconv.FormatFloat(o.Price, 'f', -1, 64),
+		"type":     "exchange limit",
+		"exchange": "bitfinex",
+	}
+
+	status, body := bf.sendReq("POST", "/v1/order/new", params, true)
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
+		id, _ := js.Get("id").Int64()
+		return strconv.FormatInt(id, 10), nil
+	}
+
+	oid, err := ProcessResp(status, js, respOk, bf.respErr)
+	if err == nil {
+		id = oid.(string)
 	}
 	return
 }

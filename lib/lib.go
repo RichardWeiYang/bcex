@@ -29,14 +29,37 @@ type Depth struct {
 	Asks []Unit
 }
 
+const (
+	Alive     = "Alive"
+	Cancelled = "Cancelled"
+	Unknown   = "Unknown"
+)
+
+type Order struct {
+	Id                       string
+	CP                       CurrencyPair
+	Side                     string
+	Price                    float64
+	Amount, Remain, Executed float64
+	State                    string
+}
+
 type Exchange interface {
 	ToSymbol(cp *CurrencyPair) string
-	SetKey(access, secret string)
+	NormSymbol(cp *string) string
+
+	OrderState(interface{}) string
+	OrderSide(string) string
+
 	Alive() bool
-	GetBalance() ([]Balance, error)
 	GetPrice(cp *CurrencyPair) (Price, error)
 	GetSymbols() ([]string, error)
 	GetDepth(cp *CurrencyPair) (Depth, error)
+
+	SetKey(access, secret string)
+
+	GetBalance() ([]Balance, error)
+	NewOrder(o *Order) (string, error)
 }
 
 type NewExchange func() Exchange
