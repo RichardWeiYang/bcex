@@ -20,6 +20,10 @@ func (exe *Ex) ToSymbol(cp *CurrencyPair) string {
 	return cp.ToSymbol("_")
 }
 
+func (exe *Ex) NormSymbol(cp *string) string {
+	return *cp
+}
+
 func (exe *Ex) sendReq(method, path string,
 	params map[string][]string, sign bool) (int, []byte) {
 	header := map[string][]string{
@@ -76,6 +80,18 @@ func (exe *Ex) GetSymbols() (symbols []string, err error) {
 }
 
 func (exe *Ex) GetDepth(cp *CurrencyPair) (depth Depth, err error) {
+	return
+}
+
+func (exe *Ex) OrderState(s interface{}) string {
+	return s.(string)
+}
+
+func (exe *Ex) OrderSide(s string) string {
+	return s
+}
+
+func (exe *Ex) NewOrder(o *Order) (id string, err error) {
 	return
 }
 

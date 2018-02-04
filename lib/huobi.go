@@ -1,8 +1,10 @@
 package lib
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -28,8 +30,13 @@ func (hb *Huobi) ToSymbol(cp *CurrencyPair) string {
 	return cp.ToSymbol("")
 }
 
+func (hb *Huobi) NormSymbol(cp *string) string {
+	tmp := *cp
+	return tmp[:3] + "_" + tmp[3:]
+}
+
 func (hb *Huobi) sendReq(method, path string,
-	params map[string][]string, sign bool) (int, []byte) {
+	params map[string][]string, body map[string]string, sign bool) (int, []byte) {
 	header := map[string][]string{
 		"Content-Type": {`application/json`},
 		"Accept":       {`application/json`},
@@ -43,6 +50,10 @@ func (hb *Huobi) sendReq(method, path string,
 	}
 
 	req.URL, _ = url.Parse("https://api.huobi.pro" + path)
+	if body != nil {
+		jsonBody, _ := json.Marshal(body)
+		req.Body = ioutil.NopCloser(bytes.NewBuffer(jsonBody))
+	}
 
 	if sign {
 		sign_params := map[string][]string{
@@ -52,13 +63,9 @@ func (hb *Huobi) sendReq(method, path string,
 			"Timestamp":        {time.Now().UTC().Format("2006-01-02T15:04:05")},
 		}
 
-		for k, v := range params {
-			sign_params[k] = v
-		}
-
 		q := req.URL.Query()
 		q = sign_params
-		data := "GET\napi.huobi.pro\n" + path + "\n" + q.Encode()
+		data := method + "\napi.huobi.pro\n" + path + "\n" + q.Encode()
 		q.Add("Signature", ComputeHmac256Base64(data, hb.secretkeyid))
 		req.URL.RawQuery = q.Encode()
 	} else {
@@ -71,7 +78,7 @@ func (hb *Huobi) sendReq(method, path string,
 }
 
 func (hb *Huobi) GetAccount() (account string, err error) {
-	status, body := hb.sendReq("GET", "/v1/account/accounts", nil, true)
+	status, body := hb.sendReq("GET", "/v1/account/accounts", nil, nil, true)
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
@@ -107,7 +114,7 @@ func (hb *Huobi) GetBalance() (balances []Balance, err error) {
 		hb.account_id = acc
 	}
 
-	status, body := hb.sendReq("GET", "/v1/account/accounts/"+hb.account_id+"/balance", nil, true)
+	status, body := hb.sendReq("GET", "/v1/account/accounts/"+hb.account_id+"/balance", nil, nil, true)
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
@@ -141,7 +148,7 @@ func (hb *Huobi) GetBalance() (balances []Balance, err error) {
 }
 
 func (hb *Huobi) Alive() bool {
-	status, _ := hb.sendReq("GET", "/v1/common/timestamp", nil, false)
+	status, _ := hb.sendReq("GET", "/v1/common/timestamp", nil, nil, false)
 	_, err := ProcessResp(status, nil, isAlive, notAlive)
 
 	if err != nil {
@@ -161,7 +168,7 @@ func (hb *Huobi) GetPrice(cp *CurrencyPair) (price Price, err error) {
 		"symbol": {hb.ToSymbol(cp)},
 	}
 
-	status, body := hb.sendReq("GET", "/market/trade", params, false)
+	status, body := hb.sendReq("GET", "/market/trade", params, nil, false)
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
@@ -190,7 +197,7 @@ func (hb *Huobi) GetPrice(cp *CurrencyPair) (price Price, err error) {
 }
 
 func (hb *Huobi) GetSymbols() (symbols []string, err error) {
-	status, body := hb.sendReq("GET", "/v1/common/symbols", nil, false)
+	status, body := hb.sendReq("GET", "/v1/common/symbols", nil, nil, false)
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
@@ -226,7 +233,7 @@ func (hb *Huobi) GetDepth(cp *CurrencyPair) (depth Depth, err error) {
 		"type":   {"step0"},
 	}
 
-	status, body := hb.sendReq("GET", "/market/depth", params, false)
+	status, body := hb.sendReq("GET", "/market/depth", params, nil, false)
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
@@ -259,6 +266,55 @@ func (hb *Huobi) GetDepth(cp *CurrencyPair) (depth Depth, err error) {
 	d, err := ProcessResp(status, js, respOk, hb.respErr)
 	if err == nil {
 		depth = d.(Depth)
+	}
+	return
+}
+
+func (hb *Huobi) OrderState(s interface{}) string {
+	return s.(string)
+}
+
+func (hb *Huobi) OrderSide(s string) string {
+	return s
+}
+
+func (hb *Huobi) NewOrder(o *Order) (id string, err error) {
+	var acc string
+	if hb.account_id == "" {
+		acc, err = hb.GetAccount()
+		if err != nil {
+			return
+		}
+		hb.account_id = acc
+	}
+
+	pb := map[string]string{
+		"account-id": hb.account_id,
+		"symbol":     hb.ToSymbol(&o.CP),
+		"type":       o.Side + "-limit",
+		"amount":     strconv.FormatFloat(o.Amount, 'f', -1, 64),
+		"price":      strconv.FormatFloat(o.Price, 'f', -1, 64),
+	}
+
+	status, body := hb.sendReq("POST", "/v1/order/orders/place", nil, pb, true)
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
+		status, _ := js.Get("status").String()
+		if status == "ok" {
+			id, _ = js.Get("data").String()
+			return id, nil
+		} else {
+			reason, _ := js.Get("err-msg").String()
+			err = errors.New(reason)
+			return nil, err
+		}
+		return nil, errors.New("Unknow")
+	}
+
+	oid, err := ProcessResp(status, js, respOk, hb.respErr)
+	if err == nil {
+		id = oid.(string)
 	}
 	return
 }

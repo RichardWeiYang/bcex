@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"strconv"
 
 	. "github.com/RichardWeiYang/bcex/lib"
 	"github.com/jawher/mow.cli"
@@ -151,6 +152,45 @@ func (c *CLI) RegisterCommands() {
 						depth.Bids[i].Price,
 						depth.Bids[i].Amount)
 				}
+			}
+		}
+	})
+
+	c.Command("neworder", "place an order", func(cmd *cli.Cmd) {
+		var (
+			exname       = cmd.StringArg("EX", "bigone", "The Exchange to query")
+			side         = cmd.StringArg("SD", "sell/buy", "buy or sell")
+			currencypair = cmd.StringArg("CP", "btc_usd", "CurrencyPair to query(lower case)")
+			price        = cmd.StringArg("PI", "0.01", "The price you want to buy or sell")
+			amount       = cmd.StringArg("AM", "0.2", "The amount you want to buy or sel")
+		)
+
+		cmd.Action = func() {
+			Init(*bcexKey)
+			ex := GetEx(*exname)
+			if ex == nil {
+				fmt.Println(*exname, ": not supported")
+				return
+			}
+
+			ek := keys[*exname]
+			ex.SetKey(ek.AccessKeyId, ek.SecretKeyId)
+
+			cp := NewCurrencyPair2(*currencypair)
+			price_f, _ := strconv.ParseFloat(*price, 64)
+			amount_f, _ := strconv.ParseFloat(*amount, 64)
+			order := Order{
+				CP:     cp,
+				Side:   *side,
+				Price:  price_f,
+				Amount: amount_f,
+			}
+
+			id, err := ex.NewOrder(&order)
+			if err != nil {
+				fmt.Println("Error: ", err)
+			} else {
+				fmt.Println("ID:      ", id)
 			}
 		}
 	})

@@ -1,7 +1,10 @@
 package lib
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -28,29 +31,41 @@ func (bo *BigOne) ToSymbol(cp *CurrencyPair) string {
 	return strings.ToUpper(cp.ToSymbol("-"))
 }
 
-func (bo *BigOne) sendReq(method, path string, sign bool) (int, []byte) {
+func (bo *BigOne) NormSymbol(cp *string) string {
+	return strings.ToLower(strings.Replace(*cp, "-", "_", 1))
+}
+
+func (bo *BigOne) sendReq(method, path string,
+	body map[string]string, sign bool) (int, []byte) {
+
 	var header map[string][]string
+
+	req := &http.Request{
+		Method: method,
+	}
+
+	req.URL, _ = url.Parse("https://api.big.one" + path)
+
 	if sign {
 		header = map[string][]string{
 			"Authorization": {"Bearer " + bo.accesskeyid},
 			"User-Agent":    {`standard browser user agent format`},
 			"Big-Device-Id": {bo.secretkeyid},
+			"Content-Type":  {`application/json`},
 		}
-	} else {
-		header = map[string][]string{}
+		req.Header = header
 	}
 
-	req := &http.Request{
-		Method: method,
-		Header: header,
+	if body != nil {
+		jsonBody, _ := json.Marshal(body)
+		req.Body = ioutil.NopCloser(bytes.NewBuffer(jsonBody))
 	}
 
-	req.URL, _ = url.Parse("https://api.big.one" + path)
 	return recvResp(req)
 }
 
 func (bo *BigOne) GetBalance() (balances []Balance, err error) {
-	status, body := bo.sendReq("GET", "/accounts", true)
+	status, body := bo.sendReq("GET", "/accounts", nil, true)
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
@@ -75,7 +90,7 @@ func (bo *BigOne) GetBalance() (balances []Balance, err error) {
 }
 
 func (bo *BigOne) Alive() bool {
-	status, _ := bo.sendReq("GET", "/accounts", true)
+	status, _ := bo.sendReq("GET", "/accounts", nil, true)
 
 	_, err := ProcessResp(status, nil, isAlive, notAlive)
 
@@ -92,7 +107,7 @@ func (bo *BigOne) SetKey(access, secret string) {
 }
 
 func (bo *BigOne) GetPrice(cp *CurrencyPair) (price Price, err error) {
-	status, body := bo.sendReq("GET", "/markets/"+bo.ToSymbol(cp), false)
+	status, body := bo.sendReq("GET", "/markets/"+bo.ToSymbol(cp), nil, false)
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
@@ -110,7 +125,7 @@ func (bo *BigOne) GetPrice(cp *CurrencyPair) (price Price, err error) {
 }
 
 func (bo *BigOne) GetSymbols() (symbols []string, err error) {
-	status, body := bo.sendReq("GET", "/markets", false)
+	status, body := bo.sendReq("GET", "/markets", nil, false)
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
@@ -133,7 +148,7 @@ func (bo *BigOne) GetSymbols() (symbols []string, err error) {
 }
 
 func (bo *BigOne) GetDepth(cp *CurrencyPair) (depth Depth, err error) {
-	status, body := bo.sendReq("GET", "/markets/"+bo.ToSymbol(cp), false)
+	status, body := bo.sendReq("GET", "/markets/"+bo.ToSymbol(cp), nil, false)
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
@@ -158,6 +173,52 @@ func (bo *BigOne) GetDepth(cp *CurrencyPair) (depth Depth, err error) {
 	d, err := ProcessResp(status, js, respOk, bo.respErr)
 	if err == nil {
 		depth = d.(Depth)
+	}
+	return
+}
+
+// different on bigone
+func getSide(side string) string {
+	if side == "sell" {
+		return "ASK"
+	}
+	return "BID"
+}
+
+func (bo *BigOne) OrderState(s interface{}) string {
+	if s.(string) == "open" {
+		return Alive
+	}
+	return s.(string)
+}
+
+func (bo *BigOne) OrderSide(s string) string {
+	if s == "ASK" {
+		return "sell"
+	} else {
+		return "buy"
+	}
+}
+
+func (bo *BigOne) NewOrder(o *Order) (id string, err error) {
+	params := map[string]string{
+		"order_market": bo.ToSymbol(&o.CP),
+		"order_side":   getSide(o.Side),
+		"amount":       strconv.FormatFloat(o.Amount, 'f', -1, 64),
+		"price":        strconv.FormatFloat(o.Price, 'f', -1, 64),
+	}
+
+	status, body := bo.sendReq("POST", "/orders", params, true)
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
+		id, _ = js.Get("data").Get("order_id").String()
+		return id, nil
+	}
+
+	oid, err := ProcessResp(status, js, respOk, bo.respErr)
+	if err == nil {
+		id = oid.(string)
 	}
 	return
 }

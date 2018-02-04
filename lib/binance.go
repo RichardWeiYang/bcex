@@ -29,6 +29,11 @@ func (bn *Binance) ToSymbol(cp *CurrencyPair) string {
 	return strings.ToUpper(cp.ToSymbol(""))
 }
 
+func (bn *Binance) NormSymbol(cp *string) string {
+	tmp := *cp
+	return strings.ToLower(tmp[:3] + "_" + tmp[3:])
+}
+
 func (bn *Binance) sendReq(method, path string,
 	params map[string][]string, sign bool) (int, []byte) {
 	header := map[string][]string{
@@ -170,6 +175,42 @@ func (bn *Binance) GetDepth(cp *CurrencyPair) (depth Depth, err error) {
 	d, err := ProcessResp(status, js, respOk, bn.respErr)
 	if err == nil {
 		depth = d.(Depth)
+	}
+	return
+}
+
+func (bn *Binance) OrderState(s interface{}) string {
+	if s.(string) == "NEW" {
+		return Alive
+	}
+	return s.(string)
+}
+
+func (bn *Binance) OrderSide(s string) string {
+	return strings.ToLower(s)
+}
+
+func (bn *Binance) NewOrder(o *Order) (id string, err error) {
+	params := map[string][]string{
+		"symbol":      {bn.ToSymbol(&o.CP)},
+		"side":        {strings.ToUpper(o.Side)},
+		"type":        {"LIMIT"},
+		"quantity":    {strconv.FormatFloat(o.Amount, 'f', -1, 64)},
+		"price":       {strconv.FormatFloat(o.Price, 'f', -1, 64)},
+		"timeInForce": {"GTC"},
+		"timestamp":   {strconv.FormatInt(time.Now().UnixNano(), 10)[0:13]},
+	}
+	status, body := bn.sendReq("POST", "/api/v3/order", params, true)
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
+		id, _ = js.Get("clientOrderId").String()
+		return id, nil
+	}
+
+	oid, err := ProcessResp(status, js, respOk, bn.respErr)
+	if err == nil {
+		id = oid.(string)
 	}
 	return
 }

@@ -27,6 +27,10 @@ func (ok *Okex) ToSymbol(cp *CurrencyPair) string {
 	return cp.ToSymbol("_")
 }
 
+func (ok *Okex) NormSymbol(cp *string) string {
+	return *cp
+}
+
 func (ok *Okex) sendReq(method, path string,
 	params map[string][]string, sign bool) (int, []byte) {
 	header := map[string][]string{
@@ -201,6 +205,44 @@ func (ok *Okex) GetDepth(cp *CurrencyPair) (depth Depth, err error) {
 	d, err := ProcessResp(status, js, respOk, ok.respErr)
 	if err == nil {
 		depth = d.(Depth)
+	}
+	return
+}
+
+func (ok *Okex) OrderState(s interface{}) string {
+	return s.(string)
+}
+
+func (ok *Okex) OrderSide(s string) string {
+	return s
+}
+
+func (ok *Okex) NewOrder(o *Order) (id string, err error) {
+	params := map[string][]string{
+		"symbol": {ok.ToSymbol(&o.CP)},
+		"type":   {o.Side},
+		"amount": {strconv.FormatFloat(o.Amount, 'f', -1, 64)},
+		"price":  {strconv.FormatFloat(o.Price, 'f', -1, 64)},
+	}
+
+	status, body := ok.sendReq("POST", "/api/v1/trade.do", params, true)
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
+		result, _ := js.Get("result").Bool()
+		if result {
+			id, _ := js.Get("order_id").Int64()
+			return strconv.FormatInt(id, 10), nil
+		} else {
+			reason, _ := js.Get("error_code").Int64()
+			err = errors.New(strconv.FormatInt(reason, 10))
+			return nil, err
+		}
+	}
+
+	oid, err := ProcessResp(status, js, respOk, ok.respErr)
+	if err == nil {
+		id = oid.(string)
 	}
 	return
 }
