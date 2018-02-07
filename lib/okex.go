@@ -83,8 +83,8 @@ func (ok *Okex) GetBalance() (balances []Balance, err error) {
 			}
 			return balances, nil
 		} else {
-			reason, _ := js.Get("error_code").Int64()
-			err = errors.New(strconv.FormatInt(reason, 10))
+			code, _ := js.Get("error_code").Int64()
+			err = errors.New(ok.code2reason(code))
 			return nil, err
 		}
 		return nil, errors.New("Unknow")
@@ -123,9 +123,9 @@ func (ok *Okex) GetPrice(cp *CurrencyPair) (price Price, err error) {
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
-		reason, e := js.Get("error_code").Int64()
+		code, e := js.Get("error_code").Int64()
 		if e == nil {
-			err = errors.New(strconv.FormatInt(reason, 10))
+			err = errors.New(ok.code2reason(code))
 			return nil, err
 		}
 
@@ -146,9 +146,9 @@ func (ok *Okex) GetSymbols() (symbols []string, err error) {
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
-		reason, e := js.Get("error_code").Int64()
+		code, e := js.Get("error_code").Int64()
 		if e == nil {
-			err = errors.New(strconv.FormatInt(reason, 10))
+			err = errors.New(ok.code2reason(code))
 			return nil, err
 		}
 
@@ -178,12 +178,6 @@ func (ok *Okex) GetDepth(cp *CurrencyPair) (depth Depth, err error) {
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
-		reason, e := js.Get("error_code").Int64()
-		if e == nil {
-			err = errors.New(strconv.FormatInt(reason, 10))
-			return nil, err
-		}
-
 		var depth Depth
 		asks, _ := js.Get("asks").Array()
 		for _, a := range asks {
@@ -234,8 +228,8 @@ func (ok *Okex) NewOrder(o *Order) (id string, err error) {
 			id, _ := js.Get("order_id").Int64()
 			return strconv.FormatInt(id, 10), nil
 		} else {
-			reason, _ := js.Get("error_code").Int64()
-			err = errors.New(strconv.FormatInt(reason, 10))
+			code, _ := js.Get("error_code").Int64()
+			err = errors.New(ok.code2reason(code))
 			return nil, err
 		}
 	}
@@ -261,8 +255,8 @@ func (ok *Okex) CancelOrder(o *Order) (err error) {
 		if result {
 			return nil, nil
 		} else {
-			reason, _ := js.Get("error_code").Int64()
-			err = errors.New(strconv.FormatInt(reason, 10))
+			code, _ := js.Get("error_code").Int64()
+			err = errors.New(ok.code2reason(code))
 			return nil, err
 		}
 

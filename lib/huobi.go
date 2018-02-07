@@ -23,7 +23,12 @@ type Huobi struct {
 }
 
 func (hb *Huobi) respErr(js *Json) (interface{}, error) {
-	return nil, errors.New("Unknow")
+	reason, err := js.Get("err-msg").String()
+	if err == nil {
+		return nil, errors.New(reason)
+	} else {
+		return nil, errors.New("Unknow")
+	}
 }
 
 func (hb *Huobi) ToSymbol(cp *CurrencyPair) string {
