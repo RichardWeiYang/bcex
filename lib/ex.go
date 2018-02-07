@@ -95,6 +95,10 @@ func (exe *Ex) NewOrder(o *Order) (id string, err error) {
 	return
 }
 
+func (exe *Ex) CancelOrder(o *Order) (err error) {
+	return
+}
+
 func NewEx() Exchange {
 	return new(Ex)
 }

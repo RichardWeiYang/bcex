@@ -319,6 +319,26 @@ func (hb *Huobi) NewOrder(o *Order) (id string, err error) {
 	return
 }
 
+func (hb *Huobi) CancelOrder(o *Order) (err error) {
+	status, body := hb.sendReq("POST", "/v1/order/orders/"+o.Id+"/submitcancel", nil, nil, true)
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
+		status, _ := js.Get("status").String()
+		if status == "ok" {
+			return nil, nil
+		} else {
+			reason, _ := js.Get("err-msg").String()
+			err = errors.New(reason)
+			return nil, err
+		}
+		return nil, errors.New("Unknow")
+	}
+
+	_, err = ProcessResp(status, js, respOk, hb.respErr)
+	return
+}
+
 func NewHuobi() Exchange {
 	return new(Huobi)
 }

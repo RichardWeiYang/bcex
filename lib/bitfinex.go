@@ -215,6 +215,23 @@ func (bf *Bitfinex) NewOrder(o *Order) (id string, err error) {
 	return
 }
 
+func (bf *Bitfinex) CancelOrder(o *Order) (err error) {
+	id, _ := strconv.ParseInt(o.Id, 10, 64)
+	params := map[string]interface{}{
+		"order_id": id,
+	}
+
+	status, body := bf.sendReq("POST", "/v1/order/cancel", params, true)
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
+		return nil, nil
+	}
+
+	_, err = ProcessResp(status, js, respOk, bf.respErr)
+	return
+}
+
 func NewBitfinex() Exchange {
 	return new(Bitfinex)
 }
