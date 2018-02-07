@@ -232,6 +232,44 @@ func (bf *Bitfinex) CancelOrder(o *Order) (err error) {
 	return
 }
 
+func (bf *Bitfinex) QueryOrder(o *Order) (order Order, err error) {
+	id, _ := strconv.ParseInt(o.Id, 10, 64)
+	params := map[string]interface{}{
+		"order_id": id,
+	}
+
+	status, body := bf.sendReq("POST", "/v1/order/status", params, true)
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
+		var order Order
+		id, _ := js.Get("id").Int64()
+		order.Id = strconv.FormatInt(id, 10)
+		symbol, _ := js.Get("symbol").String()
+		order.CP = NewCurrencyPair2(bf.NormSymbol(&symbol))
+		side, _ := js.Get("side").String()
+		order.Side = bf.OrderSide(side)
+		price, _ := js.Get("price").String()
+		order.Price, _ = strconv.ParseFloat(price, 64)
+		amount, _ := js.Get("original_amount").String()
+		order.Amount, _ = strconv.ParseFloat(amount, 64)
+		cancelled, _ := js.Get("is_cancelled").Bool()
+		order.State = bf.OrderState(cancelled)
+		remain, _ := js.Get("remaining_amount").String()
+		order.Remain, _ = strconv.ParseFloat(remain, 64)
+		executed, _ := js.Get("executed_amount").String()
+		order.Executed, _ = strconv.ParseFloat(executed, 64)
+
+		return order, nil
+	}
+
+	od, err := ProcessResp(status, js, respOk, bf.respErr)
+	if err == nil {
+		order = od.(Order)
+	}
+	return
+}
+
 func NewBitfinex() Exchange {
 	return new(Bitfinex)
 }
