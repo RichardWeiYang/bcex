@@ -61,6 +61,7 @@ type Exchange interface {
 	GetBalance() ([]Balance, error)
 	NewOrder(o *Order) (string, error)
 	CancelOrder(o *Order) error
+	QueryOrder(o *Order) (Order, error)
 }
 
 type NewExchange func() Exchange

@@ -188,6 +188,8 @@ func getSide(side string) string {
 func (bo *BigOne) OrderState(s interface{}) string {
 	if s.(string) == "open" {
 		return Alive
+	} else if s.(string) == "canceled" {
+		return Cancelled
 	}
 	return s.(string)
 }
@@ -232,6 +234,36 @@ func (bo *BigOne) CancelOrder(o *Order) (err error) {
 	}
 
 	_, err = ProcessResp(status, js, respOk, bo.respErr)
+	return
+}
+
+func (bo *BigOne) QueryOrder(o *Order) (order Order, err error) {
+	status, body := bo.sendReq("GET", "/orders/"+o.Id, nil, true)
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
+		var order Order
+		order.Id, _ = js.Get("data").Get("order_id").String()
+		market, _ := js.Get("data").Get("order_market").String()
+		order.CP = NewCurrencyPair2(bo.NormSymbol(&market))
+		side, _ := js.Get("data").Get("order_side").String()
+		order.Side = bo.OrderSide(side)
+		price, _ := js.Get("data").Get("price").String()
+		order.Price, _ = strconv.ParseFloat(price, 64)
+		amount, _ := js.Get("data").Get("amount").String()
+		order.Amount, _ = strconv.ParseFloat(amount, 64)
+		status, _ := js.Get("data").Get("order_state").String()
+		order.State = bo.OrderState(status)
+		executed, _ := js.Get("data").Get("filled_amount").String()
+		order.Executed, _ = strconv.ParseFloat(executed, 64)
+		order.Remain = order.Amount - order.Executed
+		return order, nil
+	}
+
+	od, err := ProcessResp(status, js, respOk, bo.respErr)
+	if err == nil {
+		order = od.(Order)
+	}
 	return
 }
 

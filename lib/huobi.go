@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	. "github.com/bitly/go-simplejson"
@@ -276,11 +278,17 @@ func (hb *Huobi) GetDepth(cp *CurrencyPair) (depth Depth, err error) {
 }
 
 func (hb *Huobi) OrderState(s interface{}) string {
+	if s.(string) == "submitted" {
+		return Alive
+	} else if s.(string) == "canceled" {
+		return Cancelled
+	}
 	return s.(string)
 }
 
 func (hb *Huobi) OrderSide(s string) string {
-	return s
+	side := strings.Split(s, "-")
+	return side[0]
 }
 
 func (hb *Huobi) NewOrder(o *Order) (id string, err error) {
@@ -341,6 +349,46 @@ func (hb *Huobi) CancelOrder(o *Order) (err error) {
 	}
 
 	_, err = ProcessResp(status, js, respOk, hb.respErr)
+	return
+}
+
+func (hb *Huobi) QueryOrder(o *Order) (order Order, err error) {
+	status, body := hb.sendReq("GET", "/v1/order/orders/"+o.Id, nil, nil, true)
+	js, _ := NewJson(body)
+	fmt.Println(string(body))
+
+	respOk := func(js *Json) (interface{}, error) {
+		status, _ := js.Get("status").String()
+		if status == "ok" {
+			var order Order
+			id, _ := js.Get("data").Get("id").Int64()
+			order.Id = strconv.FormatInt(id, 10)
+			symbol, _ := js.Get("data").Get("symbol").String()
+			order.CP = NewCurrencyPair2(hb.NormSymbol(&symbol))
+			side, _ := js.Get("data").Get("type").String()
+			order.Side = hb.OrderSide(side)
+			price, _ := js.Get("data").Get("price").String()
+			order.Price, _ = strconv.ParseFloat(price, 64)
+			amount, _ := js.Get("data").Get("amount").String()
+			order.Amount, _ = strconv.ParseFloat(amount, 64)
+			status, _ := js.Get("data").Get("state").String()
+			order.State = hb.OrderState(status)
+			executed, _ := js.Get("data").Get("field-amount").String()
+			order.Executed, _ = strconv.ParseFloat(executed, 64)
+			order.Remain = order.Amount - order.Executed
+			return order, nil
+		} else {
+			reason, _ := js.Get("err-msg").String()
+			err = errors.New(reason)
+			return nil, err
+		}
+		return nil, errors.New("Unknow")
+	}
+
+	od, err := ProcessResp(status, js, respOk, hb.respErr)
+	if err == nil {
+		order = od.(Order)
+	}
 	return
 }
 

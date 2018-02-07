@@ -99,6 +99,10 @@ func (exe *Ex) CancelOrder(o *Order) (err error) {
 	return
 }
 
+func (exe *Ex) QueryOrder(o *Order) (order Order, err error) {
+	return
+}
+
 func NewEx() Exchange {
 	return new(Ex)
 }

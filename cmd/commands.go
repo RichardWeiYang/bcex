@@ -222,4 +222,39 @@ func (c *CLI) RegisterCommands() {
 			}
 		}
 	})
+
+	c.Command("queryorder", "query an order", func(cmd *cli.Cmd) {
+		var (
+			symbol = cmd.StringOpt("s symbol", "", "order symbol if necessary")
+			exname = cmd.StringArg("EX", "bigone", "The Exchange to query")
+			id     = cmd.StringArg("ID", "id", "order id")
+		)
+
+		cmd.Action = func() {
+			Init(*bcexKey)
+			ex := GetEx(*exname)
+			if ex == nil {
+				fmt.Println(*exname, ": not supported")
+				return
+			}
+
+			ek := keys[*exname]
+			ex.SetKey(ek.AccessKeyId, ek.SecretKeyId)
+
+			order := Order{Id: *id, CP: NewCurrencyPair2(*symbol)}
+			o, err := ex.QueryOrder(&order)
+			if err != nil {
+				fmt.Println("Error:", err)
+			} else {
+				fmt.Println("ID:      ", o.Id)
+				fmt.Println("Symbol:  ", o.CP.String())
+				fmt.Println("Side:    ", o.Side)
+				fmt.Printf("Price:    %0.8f\n", o.Price)
+				fmt.Printf("Amount:   %0.8f\n", o.Amount)
+				fmt.Printf("Executed: %0.8f\n", o.Executed)
+				fmt.Printf("Remain:   %0.8f\n", o.Remain)
+				fmt.Println("State:   ", o.State)
+			}
+		}
+	})
 }

@@ -204,7 +204,17 @@ func (ok *Okex) GetDepth(cp *CurrencyPair) (depth Depth, err error) {
 }
 
 func (ok *Okex) OrderState(s interface{}) string {
-	return s.(string)
+	switch v := s.(type) {
+	case int:
+		if v == 0 {
+			return Alive
+		} else if v == -1 {
+			return Cancelled
+		}
+	case string:
+		return v
+	}
+	return Unknown
 }
 
 func (ok *Okex) OrderSide(s string) string {
@@ -263,6 +273,46 @@ func (ok *Okex) CancelOrder(o *Order) (err error) {
 	}
 
 	_, err = ProcessResp(status, js, respOk, ok.respErr)
+	return
+}
+
+func (ok *Okex) QueryOrder(o *Order) (order Order, err error) {
+	params := map[string][]string{
+		"symbol":   {ok.ToSymbol(&o.CP)},
+		"order_id": {o.Id},
+	}
+
+	status, body := ok.sendReq("POST", "/api/v1/order_info.do", params, true)
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
+		result, _ := js.Get("result").Bool()
+		if result {
+			var order Order
+			os := js.Get("orders").GetIndex(0)
+			id, _ := os.Get("order_id").Int64()
+			order.Id = strconv.FormatInt(id, 10)
+			order.CP = o.CP
+			side, _ := os.Get("type").String()
+			order.Side = ok.OrderSide(side)
+			order.Price, _ = os.Get("price").Float64()
+			order.Amount, _ = os.Get("amount").Float64()
+			order.Executed, _ = os.Get("deal_amount").Float64()
+			order.Remain = order.Amount - order.Executed
+			status, _ := os.Get("status").Int()
+			order.State = ok.OrderState(status)
+			return order, nil
+		} else {
+			code, _ := js.Get("error_code").Int64()
+			err = errors.New(ok.code2reason(code))
+			return nil, err
+		}
+	}
+
+	od, err := ProcessResp(status, js, respOk, ok.respErr)
+	if err == nil {
+		order = od.(Order)
+	}
 	return
 }
 
