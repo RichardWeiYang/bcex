@@ -197,4 +197,32 @@ func (c *CLI) RegisterCommands() {
 			}
 		}
 	})
+
+	c.Command("cancelorder", "cancel an order", func(cmd *cli.Cmd) {
+		var (
+			symbol = cmd.StringOpt("s symbol", "", "order symbol if necessary")
+			exname = cmd.StringArg("EX", "bigone", "The Exchange to query")
+			id     = cmd.StringArg("ID", "id", "order id")
+		)
+
+		cmd.Action = func() {
+			Init(*bcexKey)
+			ex := GetEx(*exname)
+			if ex == nil {
+				fmt.Println(*exname, ": not supported")
+				return
+			}
+
+			ek := keys[*exname]
+			ex.SetKey(ek.AccessKeyId, ek.SecretKeyId)
+
+			o := Order{Id: *id, CP: NewCurrencyPair2(*symbol)}
+			err := ex.CancelOrder(&o)
+			if err != nil {
+				fmt.Println("Error:", err)
+			} else {
+				fmt.Println("Done")
+			}
+		}
+	})
 }

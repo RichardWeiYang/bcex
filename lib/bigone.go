@@ -223,6 +223,18 @@ func (bo *BigOne) NewOrder(o *Order) (id string, err error) {
 	return
 }
 
+func (bo *BigOne) CancelOrder(o *Order) (err error) {
+	status, body := bo.sendReq("DELETE", "/orders/"+o.Id, nil, true)
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
+		return nil, nil
+	}
+
+	_, err = ProcessResp(status, js, respOk, bo.respErr)
+	return
+}
+
 func NewBigOne() Exchange {
 	return new(BigOne)
 }

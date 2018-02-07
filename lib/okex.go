@@ -247,6 +247,31 @@ func (ok *Okex) NewOrder(o *Order) (id string, err error) {
 	return
 }
 
+func (ok *Okex) CancelOrder(o *Order) (err error) {
+	params := map[string][]string{
+		"symbol":   {ok.ToSymbol(&o.CP)},
+		"order_id": {o.Id},
+	}
+
+	status, body := ok.sendReq("POST", "/api/v1/cancel_order.do", params, true)
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
+		result, _ := js.Get("result").Bool()
+		if result {
+			return nil, nil
+		} else {
+			reason, _ := js.Get("error_code").Int64()
+			err = errors.New(strconv.FormatInt(reason, 10))
+			return nil, err
+		}
+
+	}
+
+	_, err = ProcessResp(status, js, respOk, ok.respErr)
+	return
+}
+
 func NewOkex() Exchange {
 	return new(Okex)
 }

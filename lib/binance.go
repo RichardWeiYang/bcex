@@ -215,6 +215,23 @@ func (bn *Binance) NewOrder(o *Order) (id string, err error) {
 	return
 }
 
+func (bn *Binance) CancelOrder(o *Order) (err error) {
+	params := map[string][]string{
+		"symbol":            {bn.ToSymbol(&o.CP)},
+		"origClientOrderId": {o.Id},
+		"timestamp":         {strconv.FormatInt(time.Now().UnixNano(), 10)[0:13]},
+	}
+	status, body := bn.sendReq("DELETE", "/api/v3/order", params, true)
+	js, _ := NewJson(body)
+
+	respOk := func(js *Json) (interface{}, error) {
+		return nil, nil
+	}
+
+	_, err = ProcessResp(status, js, respOk, bn.respErr)
+	return
+}
+
 func NewBinance() Exchange {
 	return new(Binance)
 }
