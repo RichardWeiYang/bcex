@@ -53,7 +53,7 @@ type Exchange interface {
 
 	Alive() bool
 	GetPrice(cp *CurrencyPair) (Price, error)
-	GetSymbols() ([]string, error)
+	GetSymbols() (map[string][]string, error)
 	GetDepth(cp *CurrencyPair) (Depth, error)
 
 	SetKey(access, secret string)

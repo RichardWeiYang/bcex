@@ -127,24 +127,24 @@ func (bf *Bitfinex) GetPrice(cp *CurrencyPair) (price Price, err error) {
 	return
 }
 
-func (bf *Bitfinex) GetSymbols() (symbols []string, err error) {
+func (bf *Bitfinex) GetSymbols() (symbols map[string][]string, err error) {
 	status, body := bf.sendReq("GET", "/v1/symbols", nil, false)
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
-		var s []string
+		s := make(map[string][]string)
 		data, _ := js.Array()
 		for _, d := range data {
 			base := d.(string)[0:3]
 			quote := d.(string)[3:]
-			s = append(s, base+"_"+quote)
+			s[quote] = append(s[quote], base)
 		}
 		return s, nil
 	}
 
 	s, err := ProcessResp(status, js, respOk, bf.respErr)
 	if err == nil {
-		symbols = s.([]string)
+		symbols = s.(map[string][]string)
 	}
 	return
 }

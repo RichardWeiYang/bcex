@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
+	"strings"
 
 	. "github.com/RichardWeiYang/bcex/lib"
 	"github.com/jawher/mow.cli"
@@ -114,7 +116,23 @@ func (c *CLI) RegisterCommands() {
 			if err != nil {
 				fmt.Println("Error: ", err)
 			} else {
-				fmt.Println(symbols)
+				base := make([]string, 0, len(symbols))
+				for k := range symbols {
+					base = append(base, k)
+				}
+				sort.Strings(base)
+				for _, b := range base {
+					fmt.Println(strings.ToUpper(b), ":")
+					quote := make([]string, 0, len(symbols[b]))
+					for _, q := range symbols[b] {
+						quote = append(quote, q)
+					}
+					sort.Strings(quote)
+					for _, q := range quote {
+						fmt.Printf(" %s_%s", q, b)
+					}
+					fmt.Println()
+				}
 			}
 		}
 	})

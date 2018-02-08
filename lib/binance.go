@@ -123,25 +123,25 @@ func (bn *Binance) GetPrice(cp *CurrencyPair) (price Price, err error) {
 	return
 }
 
-func (bn *Binance) GetSymbols() (symbols []string, err error) {
+func (bn *Binance) GetSymbols() (symbols map[string][]string, err error) {
 	status, body := bn.sendReq("GET", "/api/v1/exchangeInfo", nil, false)
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
-		var s []string
+		s := make(map[string][]string)
 		data, _ := js.Get("symbols").Array()
 		for _, d := range data {
 			dd := d.(map[string]interface{})
 			base := strings.ToLower(dd["baseAsset"].(string))
 			quote := strings.ToLower(dd["quoteAsset"].(string))
-			s = append(s, base+"_"+quote)
+			s[quote] = append(s[quote], base)
 		}
 		return s, nil
 	}
 
 	s, err := ProcessResp(status, js, respOk, bn.respErr)
 	if err == nil {
-		symbols = s.([]string)
+		symbols = s.(map[string][]string)
 	}
 	return
 }

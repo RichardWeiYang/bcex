@@ -75,7 +75,7 @@ func (exe *Ex) GetPrice(cp *CurrencyPair) (price Price, err error) {
 	return
 }
 
-func (exe *Ex) GetSymbols() (symbols []string, err error) {
+func (exe *Ex) GetSymbols() (symbols map[string][]string, err error) {
 	return
 }
 

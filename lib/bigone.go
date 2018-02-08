@@ -124,25 +124,25 @@ func (bo *BigOne) GetPrice(cp *CurrencyPair) (price Price, err error) {
 	return
 }
 
-func (bo *BigOne) GetSymbols() (symbols []string, err error) {
+func (bo *BigOne) GetSymbols() (symbols map[string][]string, err error) {
 	status, body := bo.sendReq("GET", "/markets", nil, false)
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
-		var s []string
+		s := make(map[string][]string)
 		data, _ := js.Get("data").Array()
 		for _, d := range data {
 			dd := d.(map[string]interface{})
 			base := strings.ToLower(dd["base"].(string))
 			quote := strings.ToLower(dd["quote"].(string))
-			s = append(s, quote+"_"+base)
+			s[base] = append(s[base], quote)
 		}
 		return s, nil
 	}
 
 	s, err := ProcessResp(status, js, respOk, bo.respErr)
 	if err == nil {
-		symbols = s.([]string)
+		symbols = s.(map[string][]string)
 	}
 	return
 }

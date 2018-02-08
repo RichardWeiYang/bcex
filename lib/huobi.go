@@ -203,20 +203,20 @@ func (hb *Huobi) GetPrice(cp *CurrencyPair) (price Price, err error) {
 	return
 }
 
-func (hb *Huobi) GetSymbols() (symbols []string, err error) {
+func (hb *Huobi) GetSymbols() (symbols map[string][]string, err error) {
 	status, body := hb.sendReq("GET", "/v1/common/symbols", nil, nil, false)
 	js, _ := NewJson(body)
 
 	respOk := func(js *Json) (interface{}, error) {
 		status, _ := js.Get("status").String()
 		if status == "ok" {
-			var s []string
+			s := make(map[string][]string)
 			data, _ := js.Get("data").Array()
 			for _, d := range data {
 				dd := d.(map[string]interface{})
 				base := dd["base-currency"].(string)
 				quote := dd["quote-currency"].(string)
-				s = append(s, base+"_"+quote)
+				s[quote] = append(s[quote], base)
 			}
 			return s, nil
 		} else {
@@ -229,7 +229,7 @@ func (hb *Huobi) GetSymbols() (symbols []string, err error) {
 
 	s, err := ProcessResp(status, js, respOk, hb.respErr)
 	if err == nil {
-		symbols = s.([]string)
+		symbols = s.(map[string][]string)
 	}
 	return
 }

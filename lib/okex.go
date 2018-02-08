@@ -141,7 +141,7 @@ func (ok *Okex) GetPrice(cp *CurrencyPair) (price Price, err error) {
 	return
 }
 
-func (ok *Okex) GetSymbols() (symbols []string, err error) {
+func (ok *Okex) GetSymbols() (symbols map[string][]string, err error) {
 	status, body := ok.sendReq("GET", "/v2/markets/products", nil, false)
 	js, _ := NewJson(body)
 
@@ -152,19 +152,20 @@ func (ok *Okex) GetSymbols() (symbols []string, err error) {
 			return nil, err
 		}
 
-		var s []string
+		s := make(map[string][]string)
 		data, _ := js.Get("data").Array()
 		for _, d := range data {
 			dd := d.(map[string]interface{})
 			symbol := dd["symbol"].(string)
-			s = append(s, symbol)
+			currencys := strings.Split(symbol, "_")
+			s[currencys[1]] = append(s[currencys[1]], currencys[0])
 		}
 		return s, nil
 	}
 
 	s, err := ProcessResp(status, js, respOk, ok.respErr)
 	if err == nil {
-		symbols = s.([]string)
+		symbols = s.(map[string][]string)
 	}
 	return
 }
