@@ -25,7 +25,7 @@ func (exe *Ex) NormSymbol(cp *string) string {
 }
 
 func (exe *Ex) sendReq(method, path string,
-	params map[string][]string, sign bool) (int, []byte) {
+	params map[string][]string, sign bool) (int, *Json, error) {
 	header := map[string][]string{
 		"Content-Type": {`application/x-www-form-urlencoded`},
 	}

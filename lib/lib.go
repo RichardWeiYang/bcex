@@ -95,12 +95,23 @@ var notAlive = func(js *Json) (interface{}, error) {
 	return nil, errors.New("Failed")
 }
 
-func recvResp(req *http.Request) (int, []byte) {
+func recvResp(req *http.Request) (int, *Json, error) {
 	client := &http.Client{}
-	resp, _ := client.Do(req)
-	body, _ := ioutil.ReadAll(resp.Body)
+	resp, err := client.Do(req)
+	if err != nil {
+		return 0, nil, err
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return 0, nil, err
+	}
 	resp.Body.Close()
-	return resp.StatusCode, body
+	js, err := NewJson(body)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	return resp.StatusCode, js, nil
 }
 
 func ProcessResp(status int, js *Json, respOk, respErr RespHandle) (interface{}, error) {

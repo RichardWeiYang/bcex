@@ -36,7 +36,7 @@ func (bo *BigOne) NormSymbol(cp *string) string {
 }
 
 func (bo *BigOne) sendReq(method, path string,
-	body map[string]string, sign bool) (int, []byte) {
+	body map[string]string, sign bool) (int, *Json, error) {
 
 	var header map[string][]string
 
@@ -65,8 +65,10 @@ func (bo *BigOne) sendReq(method, path string,
 }
 
 func (bo *BigOne) GetBalance() (balances []Balance, err error) {
-	status, body := bo.sendReq("GET", "/accounts", nil, true)
-	js, _ := NewJson(body)
+	status, js, err := bo.sendReq("GET", "/accounts", nil, true)
+	if err != nil {
+		return
+	}
 
 	respOk := func(js *Json) (interface{}, error) {
 		bs, _ := js.Get("data").Array()
@@ -90,9 +92,12 @@ func (bo *BigOne) GetBalance() (balances []Balance, err error) {
 }
 
 func (bo *BigOne) Alive() bool {
-	status, _ := bo.sendReq("GET", "/accounts", nil, true)
+	status, _, err := bo.sendReq("GET", "/accounts", nil, true)
+	if err != nil {
+		return false
+	}
 
-	_, err := ProcessResp(status, nil, isAlive, notAlive)
+	_, err = ProcessResp(status, nil, isAlive, notAlive)
 
 	if err != nil {
 		return true
@@ -107,8 +112,10 @@ func (bo *BigOne) SetKey(access, secret string) {
 }
 
 func (bo *BigOne) GetPrice(cp *CurrencyPair) (price Price, err error) {
-	status, body := bo.sendReq("GET", "/markets/"+bo.ToSymbol(cp), nil, false)
-	js, _ := NewJson(body)
+	status, js, err := bo.sendReq("GET", "/markets/"+bo.ToSymbol(cp), nil, false)
+	if err != nil {
+		return
+	}
 
 	respOk := func(js *Json) (interface{}, error) {
 		price_s, _ := js.Get("data").Get("ticker").Get("price").String()
@@ -125,8 +132,10 @@ func (bo *BigOne) GetPrice(cp *CurrencyPair) (price Price, err error) {
 }
 
 func (bo *BigOne) GetSymbols() (symbols []string, err error) {
-	status, body := bo.sendReq("GET", "/markets", nil, false)
-	js, _ := NewJson(body)
+	status, js, err := bo.sendReq("GET", "/markets", nil, false)
+	if err != nil {
+		return
+	}
 
 	respOk := func(js *Json) (interface{}, error) {
 		var s []string
@@ -148,8 +157,10 @@ func (bo *BigOne) GetSymbols() (symbols []string, err error) {
 }
 
 func (bo *BigOne) GetDepth(cp *CurrencyPair) (depth Depth, err error) {
-	status, body := bo.sendReq("GET", "/markets/"+bo.ToSymbol(cp), nil, false)
-	js, _ := NewJson(body)
+	status, js, err := bo.sendReq("GET", "/markets/"+bo.ToSymbol(cp), nil, false)
+	if err != nil {
+		return
+	}
 
 	respOk := func(js *Json) (interface{}, error) {
 		var depth Depth
@@ -210,8 +221,10 @@ func (bo *BigOne) NewOrder(o *Order) (id string, err error) {
 		"price":        strconv.FormatFloat(o.Price, 'f', -1, 64),
 	}
 
-	status, body := bo.sendReq("POST", "/orders", params, true)
-	js, _ := NewJson(body)
+	status, js, err := bo.sendReq("POST", "/orders", params, true)
+	if err != nil {
+		return
+	}
 
 	respOk := func(js *Json) (interface{}, error) {
 		id, _ = js.Get("data").Get("order_id").String()
@@ -226,8 +239,10 @@ func (bo *BigOne) NewOrder(o *Order) (id string, err error) {
 }
 
 func (bo *BigOne) CancelOrder(o *Order) (err error) {
-	status, body := bo.sendReq("DELETE", "/orders/"+o.Id, nil, true)
-	js, _ := NewJson(body)
+	status, js, err := bo.sendReq("DELETE", "/orders/"+o.Id, nil, true)
+	if err != nil {
+		return
+	}
 
 	respOk := func(js *Json) (interface{}, error) {
 		return nil, nil
@@ -238,8 +253,10 @@ func (bo *BigOne) CancelOrder(o *Order) (err error) {
 }
 
 func (bo *BigOne) QueryOrder(o *Order) (order Order, err error) {
-	status, body := bo.sendReq("GET", "/orders/"+o.Id, nil, true)
-	js, _ := NewJson(body)
+	status, js, err := bo.sendReq("GET", "/orders/"+o.Id, nil, true)
+	if err != nil {
+		return
+	}
 
 	respOk := func(js *Json) (interface{}, error) {
 		var order Order

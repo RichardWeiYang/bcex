@@ -32,7 +32,7 @@ func (ok *Okex) NormSymbol(cp *string) string {
 }
 
 func (ok *Okex) sendReq(method, path string,
-	params map[string][]string, sign bool) (int, []byte) {
+	params map[string][]string, sign bool) (int, *Json, error) {
 	header := map[string][]string{
 		"Content-Type": {`application/x-www-form-urlencoded`},
 	}
@@ -68,8 +68,10 @@ func (ok *Okex) sendReq(method, path string,
 }
 
 func (ok *Okex) GetBalance() (balances []Balance, err error) {
-	status, body := ok.sendReq("POST", "/api/v1/userinfo.do", nil, true)
-	js, _ := NewJson(body)
+	status, js, err := ok.sendReq("POST", "/api/v1/userinfo.do", nil, true)
+	if err != nil {
+		return
+	}
 
 	respOk := func(js *Json) (interface{}, error) {
 		result, _ := js.Get("result").Bool()
@@ -99,8 +101,11 @@ func (ok *Okex) GetBalance() (balances []Balance, err error) {
 }
 
 func (ok *Okex) Alive() bool {
-	status, _ := ok.sendReq("GET", "/api/v1/exchange_rate.do", nil, false)
-	_, err := ProcessResp(status, nil, isAlive, notAlive)
+	status, _, err := ok.sendReq("GET", "/api/v1/exchange_rate.do", nil, false)
+	if err != nil {
+		return false
+	}
+	_, err = ProcessResp(status, nil, isAlive, notAlive)
 
 	if err != nil {
 		return true
@@ -119,8 +124,10 @@ func (ok *Okex) GetPrice(cp *CurrencyPair) (price Price, err error) {
 		"symbol": {ok.ToSymbol(cp)},
 	}
 
-	status, body := ok.sendReq("GET", "/api/v1/ticker.do", params, false)
-	js, _ := NewJson(body)
+	status, js, err := ok.sendReq("GET", "/api/v1/ticker.do", params, false)
+	if err != nil {
+		return
+	}
 
 	respOk := func(js *Json) (interface{}, error) {
 		code, e := js.Get("error_code").Int64()
@@ -142,8 +149,10 @@ func (ok *Okex) GetPrice(cp *CurrencyPair) (price Price, err error) {
 }
 
 func (ok *Okex) GetSymbols() (symbols []string, err error) {
-	status, body := ok.sendReq("GET", "/v2/markets/products", nil, false)
-	js, _ := NewJson(body)
+	status, js, err := ok.sendReq("GET", "/v2/markets/products", nil, false)
+	if err != nil {
+		return
+	}
 
 	respOk := func(js *Json) (interface{}, error) {
 		code, e := js.Get("error_code").Int64()
@@ -174,8 +183,10 @@ func (ok *Okex) GetDepth(cp *CurrencyPair) (depth Depth, err error) {
 		"symbol": {ok.ToSymbol(cp)},
 	}
 
-	status, body := ok.sendReq("GET", "/api/v1/depth.do", params, false)
-	js, _ := NewJson(body)
+	status, js, err := ok.sendReq("GET", "/api/v1/depth.do", params, false)
+	if err != nil {
+		return
+	}
 
 	respOk := func(js *Json) (interface{}, error) {
 		var depth Depth
@@ -229,8 +240,10 @@ func (ok *Okex) NewOrder(o *Order) (id string, err error) {
 		"price":  {strconv.FormatFloat(o.Price, 'f', -1, 64)},
 	}
 
-	status, body := ok.sendReq("POST", "/api/v1/trade.do", params, true)
-	js, _ := NewJson(body)
+	status, js, err := ok.sendReq("POST", "/api/v1/trade.do", params, true)
+	if err != nil {
+		return
+	}
 
 	respOk := func(js *Json) (interface{}, error) {
 		result, _ := js.Get("result").Bool()
@@ -257,8 +270,10 @@ func (ok *Okex) CancelOrder(o *Order) (err error) {
 		"order_id": {o.Id},
 	}
 
-	status, body := ok.sendReq("POST", "/api/v1/cancel_order.do", params, true)
-	js, _ := NewJson(body)
+	status, js, err := ok.sendReq("POST", "/api/v1/cancel_order.do", params, true)
+	if err != nil {
+		return
+	}
 
 	respOk := func(js *Json) (interface{}, error) {
 		result, _ := js.Get("result").Bool()
@@ -282,8 +297,10 @@ func (ok *Okex) QueryOrder(o *Order) (order Order, err error) {
 		"order_id": {o.Id},
 	}
 
-	status, body := ok.sendReq("POST", "/api/v1/order_info.do", params, true)
-	js, _ := NewJson(body)
+	status, js, err := ok.sendReq("POST", "/api/v1/order_info.do", params, true)
+	if err != nil {
+		return
+	}
 
 	respOk := func(js *Json) (interface{}, error) {
 		result, _ := js.Get("result").Bool()

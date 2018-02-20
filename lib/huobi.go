@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -43,7 +42,7 @@ func (hb *Huobi) NormSymbol(cp *string) string {
 }
 
 func (hb *Huobi) sendReq(method, path string,
-	params map[string][]string, body map[string]string, sign bool) (int, []byte) {
+	params map[string][]string, body map[string]string, sign bool) (int, *Json, error) {
 	header := map[string][]string{
 		"Content-Type": {`application/json`},
 		"Accept":       {`application/json`},
@@ -85,8 +84,10 @@ func (hb *Huobi) sendReq(method, path string,
 }
 
 func (hb *Huobi) GetAccount() (account string, err error) {
-	status, body := hb.sendReq("GET", "/v1/account/accounts", nil, nil, true)
-	js, _ := NewJson(body)
+	status, js, err := hb.sendReq("GET", "/v1/account/accounts", nil, nil, true)
+	if err != nil {
+		return
+	}
 
 	respOk := func(js *Json) (interface{}, error) {
 		status, _ := js.Get("status").String()
@@ -121,8 +122,10 @@ func (hb *Huobi) GetBalance() (balances []Balance, err error) {
 		hb.account_id = acc
 	}
 
-	status, body := hb.sendReq("GET", "/v1/account/accounts/"+hb.account_id+"/balance", nil, nil, true)
-	js, _ := NewJson(body)
+	status, js, err := hb.sendReq("GET", "/v1/account/accounts/"+hb.account_id+"/balance", nil, nil, true)
+	if err != nil {
+		return
+	}
 
 	respOk := func(js *Json) (interface{}, error) {
 		status, _ := js.Get("status").String()
@@ -155,8 +158,11 @@ func (hb *Huobi) GetBalance() (balances []Balance, err error) {
 }
 
 func (hb *Huobi) Alive() bool {
-	status, _ := hb.sendReq("GET", "/v1/common/timestamp", nil, nil, false)
-	_, err := ProcessResp(status, nil, isAlive, notAlive)
+	status, _, err := hb.sendReq("GET", "/v1/common/timestamp", nil, nil, false)
+	if err != nil {
+		return false
+	}
+	_, err = ProcessResp(status, nil, isAlive, notAlive)
 
 	if err != nil {
 		return true
@@ -175,8 +181,10 @@ func (hb *Huobi) GetPrice(cp *CurrencyPair) (price Price, err error) {
 		"symbol": {hb.ToSymbol(cp)},
 	}
 
-	status, body := hb.sendReq("GET", "/market/trade", params, nil, false)
-	js, _ := NewJson(body)
+	status, js, err := hb.sendReq("GET", "/market/trade", params, nil, false)
+	if err != nil {
+		return
+	}
 
 	respOk := func(js *Json) (interface{}, error) {
 		status, _ := js.Get("status").String()
@@ -204,8 +212,10 @@ func (hb *Huobi) GetPrice(cp *CurrencyPair) (price Price, err error) {
 }
 
 func (hb *Huobi) GetSymbols() (symbols []string, err error) {
-	status, body := hb.sendReq("GET", "/v1/common/symbols", nil, nil, false)
-	js, _ := NewJson(body)
+	status, js, err := hb.sendReq("GET", "/v1/common/symbols", nil, nil, false)
+	if err != nil {
+		return
+	}
 
 	respOk := func(js *Json) (interface{}, error) {
 		status, _ := js.Get("status").String()
@@ -240,8 +250,10 @@ func (hb *Huobi) GetDepth(cp *CurrencyPair) (depth Depth, err error) {
 		"type":   {"step0"},
 	}
 
-	status, body := hb.sendReq("GET", "/market/depth", params, nil, false)
-	js, _ := NewJson(body)
+	status, js, err := hb.sendReq("GET", "/market/depth", params, nil, false)
+	if err != nil {
+		return
+	}
 
 	respOk := func(js *Json) (interface{}, error) {
 		status, _ := js.Get("status").String()
@@ -309,8 +321,10 @@ func (hb *Huobi) NewOrder(o *Order) (id string, err error) {
 		"price":      strconv.FormatFloat(o.Price, 'f', -1, 64),
 	}
 
-	status, body := hb.sendReq("POST", "/v1/order/orders/place", nil, pb, true)
-	js, _ := NewJson(body)
+	status, js, err := hb.sendReq("POST", "/v1/order/orders/place", nil, pb, true)
+	if err != nil {
+		return
+	}
 
 	respOk := func(js *Json) (interface{}, error) {
 		status, _ := js.Get("status").String()
@@ -333,8 +347,10 @@ func (hb *Huobi) NewOrder(o *Order) (id string, err error) {
 }
 
 func (hb *Huobi) CancelOrder(o *Order) (err error) {
-	status, body := hb.sendReq("POST", "/v1/order/orders/"+o.Id+"/submitcancel", nil, nil, true)
-	js, _ := NewJson(body)
+	status, js, err := hb.sendReq("POST", "/v1/order/orders/"+o.Id+"/submitcancel", nil, nil, true)
+	if err != nil {
+		return
+	}
 
 	respOk := func(js *Json) (interface{}, error) {
 		status, _ := js.Get("status").String()
@@ -353,9 +369,10 @@ func (hb *Huobi) CancelOrder(o *Order) (err error) {
 }
 
 func (hb *Huobi) QueryOrder(o *Order) (order Order, err error) {
-	status, body := hb.sendReq("GET", "/v1/order/orders/"+o.Id, nil, nil, true)
-	js, _ := NewJson(body)
-	fmt.Println(string(body))
+	status, js, err := hb.sendReq("GET", "/v1/order/orders/"+o.Id, nil, nil, true)
+	if err != nil {
+		return
+	}
 
 	respOk := func(js *Json) (interface{}, error) {
 		status, _ := js.Get("status").String()

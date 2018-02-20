@@ -35,7 +35,7 @@ func (bn *Binance) NormSymbol(cp *string) string {
 }
 
 func (bn *Binance) sendReq(method, path string,
-	params map[string][]string, sign bool) (int, []byte) {
+	params map[string][]string, sign bool) (int, *Json, error) {
 	header := map[string][]string{
 		"Content-Type": {`application/x-www-form-urlencoded`},
 	}
@@ -62,8 +62,10 @@ func (bn *Binance) GetBalance() (balances []Balance, err error) {
 		"recvWindow": {`5000`},
 		"timestamp":  {strconv.FormatInt(time.Now().UnixNano(), 10)[0:13]},
 	}
-	status, body := bn.sendReq("GET", "/api/v3/account", params, true)
-	js, _ := NewJson(body)
+	status, js, err := bn.sendReq("GET", "/api/v3/account", params, true)
+	if err != nil {
+		return
+	}
 
 	respOk := func(js *Json) (interface{}, error) {
 		bs, _ := js.Get("balances").Array()
@@ -87,8 +89,11 @@ func (bn *Binance) GetBalance() (balances []Balance, err error) {
 }
 
 func (bn *Binance) Alive() bool {
-	status, _ := bn.sendReq("GET", "/api/v1/time", nil, false)
-	_, err := ProcessResp(status, nil, isAlive, notAlive)
+	status, _, err := bn.sendReq("GET", "/api/v1/time", nil, false)
+	if err != nil {
+		return false
+	}
+	_, err = ProcessResp(status, nil, isAlive, notAlive)
 
 	if err != nil {
 		return true
@@ -106,8 +111,10 @@ func (bn *Binance) GetPrice(cp *CurrencyPair) (price Price, err error) {
 	params := map[string][]string{
 		"symbol": {bn.ToSymbol(cp)},
 	}
-	status, body := bn.sendReq("GET", "/api/v3/ticker/price", params, false)
-	js, _ := NewJson(body)
+	status, js, err := bn.sendReq("GET", "/api/v3/ticker/price", params, false)
+	if err != nil {
+		return
+	}
 
 	respOk := func(js *Json) (interface{}, error) {
 		price_s, _ := js.Get("price").String()
@@ -124,8 +131,10 @@ func (bn *Binance) GetPrice(cp *CurrencyPair) (price Price, err error) {
 }
 
 func (bn *Binance) GetSymbols() (symbols []string, err error) {
-	status, body := bn.sendReq("GET", "/api/v1/exchangeInfo", nil, false)
-	js, _ := NewJson(body)
+	status, js, err := bn.sendReq("GET", "/api/v1/exchangeInfo", nil, false)
+	if err != nil {
+		return
+	}
 
 	respOk := func(js *Json) (interface{}, error) {
 		var s []string
@@ -150,8 +159,10 @@ func (bn *Binance) GetDepth(cp *CurrencyPair) (depth Depth, err error) {
 	params := map[string][]string{
 		"symbol": {bn.ToSymbol(cp)},
 	}
-	status, body := bn.sendReq("GET", "/api/v1/depth", params, false)
-	js, _ := NewJson(body)
+	status, js, err := bn.sendReq("GET", "/api/v1/depth", params, false)
+	if err != nil {
+		return
+	}
 
 	respOk := func(js *Json) (interface{}, error) {
 		var depth Depth
@@ -202,8 +213,10 @@ func (bn *Binance) NewOrder(o *Order) (id string, err error) {
 		"timeInForce": {"GTC"},
 		"timestamp":   {strconv.FormatInt(time.Now().UnixNano(), 10)[0:13]},
 	}
-	status, body := bn.sendReq("POST", "/api/v3/order", params, true)
-	js, _ := NewJson(body)
+	status, js, err := bn.sendReq("POST", "/api/v3/order", params, true)
+	if err != nil {
+		return
+	}
 
 	respOk := func(js *Json) (interface{}, error) {
 		id, _ = js.Get("clientOrderId").String()
@@ -223,8 +236,10 @@ func (bn *Binance) CancelOrder(o *Order) (err error) {
 		"origClientOrderId": {o.Id},
 		"timestamp":         {strconv.FormatInt(time.Now().UnixNano(), 10)[0:13]},
 	}
-	status, body := bn.sendReq("DELETE", "/api/v3/order", params, true)
-	js, _ := NewJson(body)
+	status, js, err := bn.sendReq("DELETE", "/api/v3/order", params, true)
+	if err != nil {
+		return
+	}
 
 	respOk := func(js *Json) (interface{}, error) {
 		return nil, nil
@@ -240,8 +255,10 @@ func (bn *Binance) QueryOrder(o *Order) (order Order, err error) {
 		"origClientOrderId": {o.Id},
 		"timestamp":         {strconv.FormatInt(time.Now().UnixNano(), 10)[0:13]},
 	}
-	status, body := bn.sendReq("GET", "/api/v3/order", params, true)
-	js, _ := NewJson(body)
+	status, js, err := bn.sendReq("GET", "/api/v3/order", params, true)
+	if err != nil {
+		return
+	}
 
 	respOk := func(js *Json) (interface{}, error) {
 		var order Order
