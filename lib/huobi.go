@@ -157,20 +157,6 @@ func (hb *Huobi) GetBalance() (balances []Balance, err error) {
 	return
 }
 
-func (hb *Huobi) Alive() bool {
-	status, _, err := hb.sendReq("GET", "/v1/common/timestamp", nil, nil, false)
-	if err != nil {
-		return false
-	}
-	_, err = ProcessResp(status, nil, isAlive, notAlive)
-
-	if err != nil {
-		return true
-	} else {
-		return false
-	}
-}
-
 func (hb *Huobi) SetKey(access, secret string) {
 	hb.accesskeyid = access
 	hb.secretkeyid = secret

@@ -100,20 +100,6 @@ func (ok *Okex) GetBalance() (balances []Balance, err error) {
 	return
 }
 
-func (ok *Okex) Alive() bool {
-	status, _, err := ok.sendReq("GET", "/api/v1/exchange_rate.do", nil, false)
-	if err != nil {
-		return false
-	}
-	_, err = ProcessResp(status, nil, isAlive, notAlive)
-
-	if err != nil {
-		return true
-	} else {
-		return false
-	}
-}
-
 func (ok *Okex) SetKey(access, secret string) {
 	ok.accesskeyid = access
 	ok.secretkeyid = secret

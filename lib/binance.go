@@ -88,20 +88,6 @@ func (bn *Binance) GetBalance() (balances []Balance, err error) {
 	return
 }
 
-func (bn *Binance) Alive() bool {
-	status, _, err := bn.sendReq("GET", "/api/v1/time", nil, false)
-	if err != nil {
-		return false
-	}
-	_, err = ProcessResp(status, nil, isAlive, notAlive)
-
-	if err != nil {
-		return true
-	} else {
-		return false
-	}
-}
-
 func (bn *Binance) SetKey(access, secret string) {
 	bn.accesskeyid = access
 	bn.secretkeyid = secret

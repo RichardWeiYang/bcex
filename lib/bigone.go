@@ -91,21 +91,6 @@ func (bo *BigOne) GetBalance() (balances []Balance, err error) {
 	return
 }
 
-func (bo *BigOne) Alive() bool {
-	status, _, err := bo.sendReq("GET", "/accounts", nil, true)
-	if err != nil {
-		return false
-	}
-
-	_, err = ProcessResp(status, nil, isAlive, notAlive)
-
-	if err != nil {
-		return true
-	} else {
-		return false
-	}
-}
-
 func (bo *BigOne) SetKey(access, secret string) {
 	bo.accesskeyid = access
 	bo.secretkeyid = GetUUID()

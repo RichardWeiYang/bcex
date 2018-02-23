@@ -63,10 +63,6 @@ func (exe *Ex) SetKey(access, secret string) {
 	exe.secretkeyid = secret
 }
 
-func (exe *Ex) Alive() bool {
-	return true
-}
-
 func (exe *Ex) GetBalance() (balances []Balance, err error) {
 	return
 }

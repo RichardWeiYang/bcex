@@ -51,7 +51,6 @@ type Exchange interface {
 	OrderState(interface{}) string
 	OrderSide(string) string
 
-	Alive() bool
 	GetPrice(cp *CurrencyPair) (Price, error)
 	GetSymbols() ([]string, error)
 	GetDepth(cp *CurrencyPair) (Depth, error)
@@ -86,13 +85,6 @@ func ListEx() (exchanges []string) {
 		exchanges = append(exchanges, key)
 	}
 	return
-}
-
-var isAlive = func(js *Json) (interface{}, error) {
-	return nil, nil
-}
-var notAlive = func(js *Json) (interface{}, error) {
-	return nil, errors.New("Failed")
 }
 
 func recvResp(req *http.Request) (int, *Json, error) {

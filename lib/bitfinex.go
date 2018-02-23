@@ -97,20 +97,6 @@ func (bf *Bitfinex) GetBalance() (balances []Balance, err error) {
 	return
 }
 
-func (bf *Bitfinex) Alive() bool {
-	status, _, err := bf.sendReq("GET", "/v1/symbols", nil, false)
-	if err != nil {
-		return false
-	}
-	_, err = ProcessResp(status, nil, isAlive, notAlive)
-
-	if err != nil {
-		return true
-	} else {
-		return false
-	}
-}
-
 func (bf *Bitfinex) SetKey(access, secret string) {
 	bf.accesskeyid = access
 	bf.secretkeyid = secret
