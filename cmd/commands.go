@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
+	"strings"
 
 	. "github.com/RichardWeiYang/bcex/lib"
 	"github.com/jawher/mow.cli"
@@ -116,6 +118,45 @@ func (c *CLI) RegisterCommands() {
 			} else {
 				for _, s := range symbols {
 					fmt.Printf("%s ", s)
+				}
+				fmt.Println()
+			}
+		}
+	})
+
+	c.Command("coins", "Get supported coins", func(cmd *cli.Cmd) {
+		var (
+			exname = cmd.StringArg("EX", "bigone", "The Exchange to query")
+		)
+
+		cmd.Action = func() {
+			Init(*bcexKey)
+			ex := GetEx(*exname)
+			if ex == nil {
+				fmt.Println(*exname, ": not supported")
+				return
+			}
+
+			symbols, err := ex.GetSymbols()
+			if err != nil {
+				fmt.Println("Error: ", err)
+			} else {
+				var coins map[string]int
+				coins = make(map[string]int)
+				for _, s := range symbols {
+					currencys := strings.Split(s, "_")
+					coins[currencys[0]] = 1
+					coins[currencys[1]] = 1
+				}
+				var oc []string
+				for v, _ := range coins {
+					oc = append(oc, v)
+				}
+				sort.Slice(oc, func(i, j int) bool {
+					return oc[i] < oc[j]
+				})
+				for _, c := range oc {
+					fmt.Printf("%s ", c)
 				}
 				fmt.Println()
 			}
