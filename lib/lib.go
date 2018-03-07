@@ -113,7 +113,7 @@ func ProcessResp(status int, js *Json, respOk, respErr RespHandle) (interface{},
 	if respOk == nil || respErr == nil {
 		return nil, errors.New("No proper handler")
 	}
-	if status == http.StatusOK {
+	if status == http.StatusOK || status == http.StatusCreated {
 		return respOk(js)
 	} else {
 		return respErr(js)
