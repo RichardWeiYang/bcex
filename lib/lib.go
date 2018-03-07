@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	. "github.com/bitly/go-simplejson"
 )
@@ -88,7 +89,9 @@ func ListEx() (exchanges []string) {
 }
 
 func recvResp(req *http.Request) (int, *Json, error) {
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: 15 * time.Second,
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return 0, nil, err
