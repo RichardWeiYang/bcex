@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"sort"
 	"time"
 
 	. "github.com/bitly/go-simplejson"
@@ -85,6 +86,9 @@ func ListEx() (exchanges []string) {
 	for key, _ := range exs {
 		exchanges = append(exchanges, key)
 	}
+	sort.Slice(exchanges, func(i, j int) bool {
+		return exchanges[i] < exchanges[j]
+	})
 	return
 }
 
